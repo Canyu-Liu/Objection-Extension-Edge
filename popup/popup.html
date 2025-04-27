@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../lib/css/bootstrap.min.css" />
+    <script src="../lib/js/bootstrap.min.js">
+    </script>
+    <style>
+        .container {
+            width: 15em;
+        }
+        .header{
+            padding: 5px 20px 0px 20px;
+        }
+        .header-link {
+            text-decoration: none;
+            color: black;
+        }
+        .ad-mode-group {
+            margin-top: 10px;
+            margin-bottom: 10px;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <a class="header-link" href="#" id="header-link">
+            <img src="../icons/objection128x128.png" alt="logo" height="20px">
+            <span style="vertical-align: middle;">自动异议</span>
+        </a>
+    </div>
+    <div class="container p-3">
+        <div class="input-group mb-3">
+            <span class="input-group-text" id="basic-addon1">切换气泡</span>
+            <select class="form-select" id="bubble-style">
+                <option value="0">异议！</option>
+                <option value="1">等等！</option>
+                <option value="2">看招！</option>
+                <option value="3">随机</option>
+            </select>
+        </div>
+        <div class="input-group mb-3">
+            <span class="input-group-text" id="basic-addon1">气泡大小</span>
+            <input type="number" class="form-control" id="bubble-size" min="1" max="100" step="1" value="10">
+        </div>
+        <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" role="switch" id="objection-switch">
+            <label class="form-check-label" for="objection-switch">异议所有网页！</label>
+        </div>
+        <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" role="switch" id="ad-blocker-switch">
+            <label class="form-check-label" for="ad-blocker-switch">异议广告并移除！</label>
+        </div>
+        <!-- 添加广告处理方式选择 -->
+        <div class="ad-mode-group" id="ad-mode-group">
+            <label class="form-label">广告处理方式</label>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="ad-mode" id="ad-mode-placeholder" value="placeholder" checked>
+                <label class="form-check-label" for="ad-mode-placeholder">使用提示文字替换</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="ad-mode" id="ad-mode-remove" value="remove">
+                <label class="form-check-label" for="ad-mode-remove">直接删除广告</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="ad-mode" id="ad-mode-image" value="image">
+                <label class="form-check-label" for="ad-mode-image">使用图片替换</label>
+            </div>
+        </div>
+    </div>
+    <script src="popup.js"></script>
+</body>
+
+</html>
