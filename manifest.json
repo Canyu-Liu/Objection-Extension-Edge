@@ -14,7 +14,19 @@
         "default_popup": "popup/popup.html"
     },
     "background": {
-        "service_worker": "background.js"
+        "service_worker": "background/main.js",
+        "type": "module"
+    },
+    "content_scripts": [
+        {
+            "matches": ["<all_urls>"],
+            "js": ["content-scripts/content.js"],
+            "type": "module"
+        }
+    ],
+    "options_ui": {
+        "page": "options/options.html",
+        "open_in_tab": true
     },
     "web_accessible_resources": [
         {
@@ -22,7 +34,8 @@
                 "images/*.jpeg",
                 "images/*.jpg",
                 "images/*.png",
-                "audio/*.wav"
+                "audio/*.wav",
+                "content-scripts/modules/*.js"
             ],
             "matches": [
                 "<all_urls>"

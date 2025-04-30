@@ -22,6 +22,12 @@
             margin-bottom: 10px;
             display: none;
         }
+        .footer {
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+            margin-top: 10px;
+            text-align: center;
+        }
     </style>
 </head>
 
@@ -40,6 +46,7 @@
                 <option value="1">等等！</option>
                 <option value="2">看招！</option>
                 <option value="3">随机</option>
+                <option value="custom">自定义</option>
             </select>
         </div>
         <div class="input-group mb-3">
@@ -52,7 +59,7 @@
         </div>
         <div class="form-check form-switch mb-3">
             <input class="form-check-input" type="checkbox" role="switch" id="ad-blocker-switch">
-            <label class="form-check-label" for="ad-blocker-switch">异议广告并移除！</label>
+            <label class="form-check-label" for="ad-blocker-switch">异议所有广告！</label>
         </div>
         <!-- 添加广告处理方式选择 -->
         <div class="ad-mode-group" id="ad-mode-group">
@@ -69,6 +76,24 @@
                 <input class="form-check-input" type="radio" name="ad-mode" id="ad-mode-image" value="image">
                 <label class="form-check-label" for="ad-mode-image">使用图片替换</label>
             </div>
+            
+            <!-- 添加广告拦截触发方式选择 -->
+            <div class="mt-3">
+                <label class="form-label">广告拦截触发方式</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="ad-trigger-mode" id="ad-trigger-auto" value="auto" checked>
+                    <label class="form-check-label" for="ad-trigger-auto">页面加载时自动拦截</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="ad-trigger-mode" id="ad-trigger-click" value="click">
+                    <label class="form-check-label" for="ad-trigger-click">仅当点击广告时拦截</label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 添加高级设置链接 -->
+        <div class="footer">
+            <a href="#" id="advanced-settings-link" class="btn btn-sm btn-outline-secondary">高级设置</a>
         </div>
     </div>
     <script src="popup.js"></script>

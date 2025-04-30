@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>异议扩展 - 高级设置</title>
+    <link rel="stylesheet" href="../lib/css/bootstrap.min.css" />
+    <script src="../lib/js/bootstrap.min.js"></script>
+    <style>
+        body {
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 800px;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .preview-container {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .preview-image {
+            max-width: 200px;
+            max-height: 200px;
+            margin-bottom: 15px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .section-title {
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .btn-custom {
+            margin-top: 10px;
+        }
+        .custom-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+        }
+        .custom-item-preview {
+            width: 50px;
+            height: 50px;
+            margin-right: 15px;
+            object-fit: contain;
+        }
+        .custom-item-content {
+            flex-grow: 1;
+        }
+        .custom-item-actions {
+            margin-left: 10px;
+        }
+        /* 添加广告过滤规则样式 */
+        .rules-container {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            height: 300px;
+            overflow-y: auto;
+        }
+        .rule-item {
+            padding: 8px 10px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .rule-item:hover {
+            background-color: #f8f9fa;
+        }
+        .rule-text {
+            font-family: monospace;
+            word-break: break-all;
+        }
+        .rule-actions {
+            display: flex;
+            gap: 5px;
+        }
+        .disabled-rule {
+            color: #999;
+            text-decoration: line-through;
+        }
+        /* 导航菜单样式 */
+        .nav-tabs {
+            margin-bottom: 20px;
+        }
+        .tab-content {
+            padding-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="../icons/objection128x128.png" alt="logo" height="60px">
+            <h2>异议扩展 - 高级设置</h2>
+        </div>
+
+        <div class="alert alert-info">
+            在这里，您可以自定义点击特效的图像和音频，以及广告过滤规则，让您的异议体验更加个性化！
+        </div>
+
+        <!-- 导航标签 -->
+        <ul class="nav nav-tabs" id="optionsTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general-tab-pane" type="button" role="tab" aria-controls="general-tab-pane" aria-selected="true">一般设置</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="custom-tab" data-bs-toggle="tab" data-bs-target="#custom-tab-pane" type="button" role="tab" aria-controls="custom-tab-pane" aria-selected="false">自定义特效</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="filter-tab" data-bs-toggle="tab" data-bs-target="#filter-tab-pane" type="button" role="tab" aria-controls="filter-tab-pane" aria-selected="false">广告过滤规则</button>
+            </li>
+        </ul>
+        
+        <!-- 标签内容 -->
+        <div class="tab-content" id="optionsTabsContent">
+            <!-- 一般设置标签面板 -->
+            <div class="tab-pane fade show active" id="general-tab-pane" role="tabpanel" aria-labelledby="general-tab" tabindex="0">
+                <!-- 标准设置 -->
+                <div class="section">
+                    <h4 class="section-title">标准设置</h4>
+                    <div class="mb-3">
+                        <label for="bubble-style" class="form-label">默认气泡样式</label>
+                        <select class="form-select" id="bubble-style">
+                            <option value="0">异议！</option>
+                            <option value="1">等等！</option>
+                            <option value="2">看招！</option>
+                            <option value="3">随机</option>
+                            <option value="custom">使用自定义气泡</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="bubble-size" class="form-label">气泡大小</label>
+                        <input type="range" class="form-range" id="bubble-size" min="1" max="20" step="1" value="10">
+                        <div class="d-flex justify-content-between">
+                            <span>小</span>
+                            <span>大</span>
+                        </div>
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="objection-switch">
+                        <label class="form-check-label" for="objection-switch">启用异议效果</label>
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="ad-blocker-switch">
+                        <label class="form-check-label" for="ad-blocker-switch">启用广告拦截</label>
+                    </div>
+                    <div id="ad-mode-group" style="display: none;">
+                        <label class="form-label">广告处理方式</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ad-mode" id="ad-mode-placeholder" value="placeholder" checked>
+                            <label class="form-check-label" for="ad-mode-placeholder">使用提示文字替换</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ad-mode" id="ad-mode-remove" value="remove">
+                            <label class="form-check-label" for="ad-mode-remove">直接删除广告</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ad-mode" id="ad-mode-image" value="image">
+                            <label class="form-check-label" for="ad-mode-image">使用图片替换</label>
+                        </div>
+                        
+                        <!-- 添加广告拦截触发方式选择 -->
+                        <div class="mt-3">
+                            <label class="form-label">广告拦截触发方式</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="ad-trigger-mode" id="ad-trigger-auto" value="auto" checked>
+                                <label class="form-check-label" for="ad-trigger-auto">页面加载时自动拦截</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="ad-trigger-mode" id="ad-trigger-click" value="click">
+                                <label class="form-check-label" for="ad-trigger-click">仅当点击广告时拦截</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 自定义特效标签面板 -->
+            <div class="tab-pane fade" id="custom-tab-pane" role="tabpanel" aria-labelledby="custom-tab" tabindex="0">
+                <!-- 自定义气泡设置 -->
+                <div class="section">
+                    <h4 class="section-title">自定义气泡设置</h4>
+                    <p class="text-muted">上传您自己的图像和音频来替换点击特效</p>
+                    
+                    <div class="preview-container">
+                        <h5>预览效果</h5>
+                        <img id="preview-custom-image" src="../images/jp_objection.png" class="preview-image" alt="自定义气泡预览">
+                        <div>
+                            <button id="test-custom-effect" class="btn btn-primary">测试效果</button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="custom-image" class="form-label">自定义图像</label>
+                        <input class="form-control" type="file" id="custom-image" accept="image/*">
+                        <div class="form-text">推荐尺寸: 400x300 像素，格式: PNG、JPG</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="custom-audio" class="form-label">自定义音频</label>
+                        <input class="form-control" type="file" id="custom-audio" accept="audio/*">
+                        <div class="form-text">推荐格式: WAV、MP3，大小不超过500KB</div>
+                    </div>
+
+                    <button id="save-custom" class="btn btn-success">保存自定义设置</button>
+                    <button id="reset-custom" class="btn btn-outline-secondary">恢复默认设置</button>
+                </div>
+
+                <!-- 保存库区域 -->
+                <div class="section">
+                    <h4 class="section-title">我的自定义特效库</h4>
+                    <p class="text-muted">管理您保存的多个自定义特效</p>
+                    
+                    <div id="custom-effects-list">
+                        <!-- 自定义特效项将在这里动态生成 -->
+                    </div>
+                    
+                    <div class="mt-3">
+                        <button id="add-to-library" class="btn btn-outline-primary">将当前设置添加到库</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 广告过滤规则标签面板 -->
+            <div class="tab-pane fade" id="filter-tab-pane" role="tabpanel" aria-labelledby="filter-tab" tabindex="0">
+                <div class="section">
+                    <h4 class="section-title">广告过滤规则</h4>
+                    <p class="text-muted">添加和管理自定义广告过滤规则，支持Adguard广告拦截器格式</p>
+
+                    <div class="mb-3">
+                        <label for="new-rule" class="form-label">添加新规则</label>
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" id="new-rule" placeholder="输入过滤规则...">
+                            <button class="btn btn-outline-success" type="button" id="add-rule-btn">添加</button>
+                        </div>
+                        <div class="form-text">
+                            规则示例：<br>
+                            - 基本规则：<code>||example.org^</code> (屏蔽来自example.org的所有请求)<br>
+                            - 元素隐藏规则：<code>example.org##.ad-banner</code> (隐藏example.org上的.ad-banner类元素)<br>
+                            - 例外规则：<code>@@||example.org^</code> (将example.org加入白名单)<br>
+                            <a href="https://adguard.info/kb/zh-CN/general/ad-filtering/create-own-filters/" target="_blank">了解更多规则格式</a>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label mb-0">规则列表</label>
+                            <div>
+                                <button class="btn btn-sm btn-outline-primary" id="export-rules-btn">导出规则</button>
+                                <button class="btn btn-sm btn-outline-secondary" id="import-rules-btn">导入规则</button>
+                            </div>
+                        </div>
+                        <div class="rules-container" id="rules-list">
+                            <!-- 这里将动态添加规则项 -->
+                            <div class="text-center text-muted p-3" id="no-rules-message">
+                                尚未添加任何过滤规则
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="custom-rules-switch" checked>
+                        <label class="form-check-label" for="custom-rules-switch">启用自定义过滤规则</label>
+                    </div>
+
+                    <input type="file" id="import-rules-file" accept=".txt" style="display: none;">
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between">
+            <a href="popup.html" class="btn btn-link">返回</a>
+            <button id="save-all" class="btn btn-primary">保存所有设置</button>
+        </div>
+    </div>
+    <script src="options.js" type="module"></script>
+</body>
+</html>
