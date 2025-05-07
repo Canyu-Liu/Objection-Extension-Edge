@@ -27,6 +27,8 @@ export function initializeCommunication() {
             // 如果点击触发模式已启用，查找并处理广告元素（覆盖层会自动添加）
             if (globalConfig.adBlockerEnabled && globalConfig.adTriggerMode === 'click' && globalConfig.customRulesEnabled) {
                 findAndProcessAds();
+                // 在点击模式下也设置MutationObserver，以监听新元素
+                setupMutationObserver();
             }
             
             sendResponse({status: 'success'});
@@ -69,7 +71,10 @@ export function initializeCommunication() {
                 // 使用统一的处理逻辑查找广告元素并添加覆盖层
                 findAndProcessAds();
                 
-                console.log('已设置广告拦截点击监听和广告覆盖层');
+                // 在点击模式下也设置MutationObserver，以监听新元素
+                setupMutationObserver();
+                
+                console.log('已设置广告拦截点击监听和广告覆盖层，并启动DOM变化监听');
             }
             
             // 如果启用了全局异议模式，添加鼠标事件

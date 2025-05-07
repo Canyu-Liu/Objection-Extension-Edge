@@ -14,8 +14,17 @@ export function showMessage(message, type = 'info') {
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="关闭"></button>
     `;
     
-    const container = document.querySelector('.container');
-    container.insertBefore(alertDiv, container.firstChild);
+    // 添加自定义样式，使消息悬浮在窗口上
+    alertDiv.style.position = 'fixed';
+    alertDiv.style.top = '20px';
+    alertDiv.style.left = '50%';
+    alertDiv.style.transform = 'translateX(-50%)';
+    alertDiv.style.zIndex = '9999';
+    alertDiv.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+    alertDiv.style.minWidth = '300px';
+    
+    // 将消息添加到body而不是container
+    document.body.appendChild(alertDiv);
     
     // 3秒后自动消失
     setTimeout(() => {
@@ -123,7 +132,7 @@ export function addBootstrapIcons() {
         const iconLink = document.createElement('link');
         iconLink.id = 'bootstrap-icons';
         iconLink.rel = 'stylesheet';
-        iconLink.href = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css';
+        iconLink.href = 'https://fastly.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css';
         document.head.appendChild(iconLink);
     }
 }

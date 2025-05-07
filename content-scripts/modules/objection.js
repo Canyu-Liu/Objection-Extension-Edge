@@ -89,9 +89,33 @@ export function showObjectionEffect(x, y) {
     
     // 播放音频
     if (audioUrl) {
-        const audio = new Audio(audioUrl);
-        audio.volume = 0.7;
-        audio.play().catch(err => console.error('播放音频失败:', err));
+        try {
+            let audio;
+            
+            // 处理自定义音频（Base64格式）
+            if (globalConfig.bubbleType === 'custom' && audioUrl.startsWith('data:')) {
+                // 将Base64转换为Blob
+                const fetchResponse = fetch(audioUrl);
+                fetchResponse.then(response => {
+                    if (!response.ok) throw new Error('无效的音频数据');
+                    return response.blob();
+                }).then(blob => {
+                    // 创建Blob URL
+                    const blobUrl = URL.createObjectURL(blob);
+                    audio = new Audio(blobUrl);
+                    audio.volume = 0.7;
+                    audio.onended = () => URL.revokeObjectURL(blobUrl); // 释放Blob URL
+                    audio.play().catch(err => console.error('播放音频失败:', err));
+                }).catch(err => console.error('处理自定义音频失败:', err));
+            } else {
+                // 处理标准音频文件URL
+                audio = new Audio(audioUrl);
+                audio.volume = 0.7;
+                audio.play().catch(err => console.error('播放音频失败:', err));
+            }
+        } catch (err) {
+            console.error('音频播放出错:', err);
+        }
     }
     
     // 一秒后移除元素

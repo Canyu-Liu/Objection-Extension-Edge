@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>异议扩展 - 高级设置</title>
+    <title>自动异议 - 高级设置</title>
     <link rel="stylesheet" href="../lib/css/bootstrap.min.css" />
     <script src="../lib/js/bootstrap.min.js"></script>
     <style>
@@ -111,13 +111,8 @@
     <div class="container">
         <div class="header">
             <img src="../icons/objection128x128.png" alt="logo" height="60px">
-            <h2>异议扩展 - 高级设置</h2>
+            <h2>自动异议</h2>
         </div>
-
-        <div class="alert alert-info">
-            在这里，您可以自定义点击特效的图像和音频，以及广告过滤规则，让您的异议体验更加个性化！
-        </div>
-
         <!-- 导航标签 -->
         <ul class="nav nav-tabs" id="optionsTabs" role="tablist">
             <li class="nav-item" role="presentation">
@@ -128,6 +123,9 @@
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="filter-tab" data-bs-toggle="tab" data-bs-target="#filter-tab-pane" type="button" role="tab" aria-controls="filter-tab-pane" aria-selected="false">广告过滤规则</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="about-tab" data-bs-toggle="tab" data-bs-target="#about-tab-pane" type="button" role="tab" aria-controls="about-tab-pane" aria-selected="false">关于</button>
             </li>
         </ul>
         
@@ -245,7 +243,7 @@
             <div class="tab-pane fade" id="filter-tab-pane" role="tabpanel" aria-labelledby="filter-tab" tabindex="0">
                 <div class="section">
                     <h4 class="section-title">广告过滤规则</h4>
-                    <p class="text-muted">添加和管理自定义广告过滤规则，支持Adguard广告拦截器格式</p>
+                    <p class="text-muted">添加和管理自定义广告过滤规则，兼容Adguard规则</p>
 
                     <div class="mb-3">
                         <label for="new-rule" class="form-label">添加新规则</label>
@@ -256,8 +254,8 @@
                         <div class="form-text">
                             规则示例：<br>
                             - 基本规则：<code>||example.org^</code> (屏蔽来自example.org的所有请求)<br>
-                            - 元素隐藏规则：<code>example.org##.ad-banner</code> (隐藏example.org上的.ad-banner类元素)<br>
-                            - 例外规则：<code>@@||example.org^</code> (将example.org加入白名单)<br>
+                            - 元素规则：<code>example.org##.ad-banner</code> (屏蔽example.org上的.ad-banner类元素)<br>
+                            - 白名单规则：<code>@@||example.org^</code> (将example.org加入白名单)<br>
                             <a href="https://adguard.info/kb/zh-CN/general/ad-filtering/create-own-filters/" target="_blank">了解更多规则格式</a>
                         </div>
                     </div>
@@ -284,6 +282,18 @@
                     </div>
 
                     <input type="file" id="import-rules-file" accept=".txt" style="display: none;">
+                </div>
+            </div>
+
+            <!-- 关于标签面板 -->
+            <div class="tab-pane fade" id="about-tab-pane" role="tabpanel" aria-labelledby="about-tab" tabindex="0">
+                <div class="section">
+                    <h4 class="section-title">关于</h4>
+                    <p>感谢您使用 <strong>异议扩展</strong>！</p>
+                    <p>这是一个用于增强浏览体验的扩展，提供了自定义点击特效和广告过滤功能。</p>
+                    <p>如果您有任何问题或建议，请访问我们的 <a href="https://github.com/your-repo" target="_blank">GitHub 项目页面</a>。</p>
+                    <p>版本: 1.0.0</p>
+                    <p>开发者: Canyu</p>
                 </div>
             </div>
         </div>

@@ -1,74 +1,94 @@
 // 广告拦截器模块
-import { globalConfig, processedElements } from './config.js';
+import { globalConfig, processedElements, adBlockerPresetRules } from './config.js';
 
-// 检测元素是否为广告元素（通用函数，适用于iframe和普通DOM元素）
+// 检测元素是否为广告元素（统一判断函数，适用于所有HTML元素）
 export function isAdElement(element) {
     if (!element || !element.tagName) return false;
     
-    // 检查是否是iframe
-    if (element.tagName === 'IFRAME') {
-        return isAdIframe(element);
+    // 已经处理过的元素直接返回
+    if (processedElements.has(element)) return true;
+    
+    // 1. 检查元素是否匹配自定义规则选择器
+    if (checkIfElementMatchesCustomRules(element)) {
+        console.log('元素匹配自定义规则选择器:', element.tagName, element.id || '无ID');
+        return true;
     }
     
-    // 检查普通DOM元素是否匹配广告规则
-    return checkIfElementMatchesAdRules(element);
+    // 2. 检查元素是否匹配预置规则
+    if (checkIfElementMatchesPresetRules(element)) {
+        console.log('元素匹配预置规则:', element.tagName, element.id || '无ID');
+        return true;
+    }
+    
+    return false;
 }
 
-// 检测iframe是否为广告iframe
-function isAdIframe(iframe) {
-    if (!iframe || iframe.tagName !== 'IFRAME') return false;
-    
-    const title = iframe.getAttribute('title') || '';
-    const id = iframe.id || '';
-    const name = iframe.getAttribute('name') || '';
-    const src = iframe.src || '';
-    
-    // 检查iframe属性是否包含广告标识
-    if (title.includes('Advertisement') || 
-        title.includes('广告') || 
-        id.includes('ad_iframe') || 
-        id.includes('adframe') ||
-        id.includes('ad-frame') ||
-        id.includes('ad_') || 
-        name.includes('ad_iframe') || 
-        name.includes('adframe')) {
-        
-        console.log('识别到广告iframe:', {
-            title,
-            id,
-            name,
-            src: src.substring(0, 100) // 只显示URL的一部分
-        });
-        
+// 检查元素是否匹配自定义规则
+function checkIfElementMatchesCustomRules(element) {
+    if (!globalConfig.customRulesEnabled || !globalConfig.customAdSelectors || !globalConfig.customAdSelectors.length) {
+        return false;
+    }
+
+    // 检查元素本身是否匹配
+    if (matchesAnySelector(element, globalConfig.customAdSelectors)) {
         return true;
     }
     
-    // 检查src是否包含广告链接特征
-    const adUrlPatterns = [
-        'doubleclick.net', 'googleadservices', 'googlesyndication',
-        'adserver', 'adservice', 'adsystem', 'adnxs', 'adroll',
-        'adform', 'admeld', 'adtech', '/ad/', '/ads/', '/advert',
-        'pagead', 'cpro.baidu.com', 'pos.baidu.com', 'ad.doubleclick.net'
-    ];
+    // 检查父元素是否匹配（最多向上查找5层）
+    let parent = element.parentElement;
+    let depth = 0;
+    while (parent && depth < 5) {
+        if (matchesAnySelector(parent, globalConfig.customAdSelectors)) {
+            return true;
+        }
+        parent = parent.parentElement;
+        depth++;
+    }
     
-    if (adUrlPatterns.some(pattern => src.includes(pattern))) {
-        console.log('通过URL识别到广告iframe:', src.substring(0, 100));
+    return false;
+}
+
+// 检查元素是否匹配预置规则
+function checkIfElementMatchesPresetRules(element) {
+    // 检查 src 属性 (适用于 img, iframe, script 等)
+    const src = element.src || element.getAttribute('src') || '';
+    if (src && adBlockerPresetRules.srcRules.some(rule => rule.test(src))) {
+        console.log('命中 src 规则:', src.substring(0, 100));
         return true;
     }
     
-    // 检查元素的样式特征
-    const width = iframe.width || iframe.style.width;
-    const height = iframe.height || iframe.style.height;
+    // 检查 id 属性
+    const id = element.id || '';
+    if (id && adBlockerPresetRules.idRules.some(rule => rule.test(id))) {
+        console.log('命中 id 规则:', id);
+        return true;
+    }
     
-    // 常见广告尺寸检查 (一些标准广告尺寸)
-    const commonAdSizes = [
-        '300x250', '336x280', '728x90', '160x600', '320x50',
-        '300x600', '970x90', '970x250', '250x250', '200x200'
-    ];
+    // 检查 class 属性
+    const className = element.className || '';
+    if (className && typeof className === 'string' && adBlockerPresetRules.classRules.some(rule => rule.test(className))) {
+        console.log('命中 class 规则:', className);
+        return true;
+    }
     
-    const iframeSize = `${width}x${height}`.replace(/px/g, '');
-    if (commonAdSizes.includes(iframeSize)) {
-        console.log('通过尺寸识别到可能的广告元素:', iframeSize);
+    // 检查 name 属性
+    const name = element.getAttribute('name') || '';
+    if (name && adBlockerPresetRules.nameRules.some(rule => rule.test(name))) {
+        console.log('命中 name 规则:', name);
+        return true;
+    }
+    
+    // 检查内容
+    const content = element.textContent || '';
+    if (content && adBlockerPresetRules.contentRules.some(rule => rule.test(content.trim()))) {
+        console.log('命中内容规则:', content.substring(0, 50));
+        return true;
+    }
+    
+    // 检查标题 (适用于 iframe 等)
+    const title = element.getAttribute('title') || '';
+    if (title && adBlockerPresetRules.contentRules.some(rule => rule.test(title))) {
+        console.log('命中 title 规则:', title);
         return true;
     }
     
@@ -77,7 +97,7 @@ function isAdIframe(iframe) {
 
 // 处理文档点击事件
 export function handleDocumentClick(event) {
-    if (!globalConfig.adBlockerEnabled || !globalConfig.customRulesEnabled || globalConfig.adTriggerMode !== 'click') {
+    if (!globalConfig.adBlockerEnabled || globalConfig.adTriggerMode !== 'click') {
         return;
     }
     
@@ -98,35 +118,23 @@ export function handleDocumentClick(event) {
         return;
     }
     
-    // 检查元素是否匹配广告规则
-    let isAd = false;
-    if (globalConfig.customAdSelectors && globalConfig.customAdSelectors.length > 0) {
-        isAd = isAdElement(clickedElement);
-        console.log('广告规则匹配结果:', isAd ? '✓ 命中广告规则' : '✗ 未命中广告规则');
+    // 由于元素在页面加载和DOM变化时已经被检查和标记
+    // 我们检查元素是否已经被处理过
+    if (processedElements.has(clickedElement) || clickedElement.getAttribute('data-objection-id')) {
+        console.log('元素已被识别为广告，显示特效');
         
-        if (isAd) {
-            console.log('匹配的选择器:', findMatchingSelectors(clickedElement));
-            
-            // 如果是广告元素，先显示点击特效
-            import('./objection.js').then(module => {
-                const showObjectionEffect = module.showObjectionEffect;
-                showObjectionEffect(event.clientX, event.clientY);
+        // 如果是已识别的广告元素，直接显示点击特效
+        import('./objection.js').then(module => {
+            const showObjectionEffect = module.showObjectionEffect;
+            showObjectionEffect(event.clientX, event.clientY);
                 
-                // 延迟处理广告，等待特效播放完成
-                setTimeout(() => {
-                    processAdElement(clickedElement);
-                }, 1000); // 与特效持续时间保持一致
-            });
-            
-            return;
-        }
-    } else {
-        console.log('警告: 没有配置自定义广告规则选择器');
-    }
-    
-    // 如果点击的不是广告元素，查找并处理附近的广告（可选功能）
-    if (globalConfig.scanOnClick) {
-        findAndProcessAds();
+            // 延迟处理广告，等待特效播放完成
+            setTimeout(() => {
+                processAdElement(clickedElement);
+            }, 1000); // 与特效持续时间保持一致
+        });
+        
+        return;
     }
 }
 
@@ -160,31 +168,6 @@ function handleAdOverlayClick(event, overlay) {
     });
 }
 
-// 检查元素是否匹配广告规则
-function checkIfElementMatchesAdRules(element) {
-    if (!globalConfig.customAdSelectors || !globalConfig.customAdSelectors.length) {
-        return false;
-    }
-    
-    // 检查元素本身是否匹配
-    if (matchesAnySelector(element, globalConfig.customAdSelectors)) {
-        return true;
-    }
-    
-    // 检查父元素是否匹配（最多向上查找5层）
-    let parent = element.parentElement;
-    let depth = 0;
-    while (parent && depth < 5) {
-        if (matchesAnySelector(parent, globalConfig.customAdSelectors)) {
-            return true;
-        }
-        parent = parent.parentElement;
-        depth++;
-    }
-    
-    return false;
-}
-
 // 检查元素是否匹配任何选择器
 function matchesAnySelector(element, selectors) {
     for (const selector of selectors) {
@@ -199,56 +182,18 @@ function matchesAnySelector(element, selectors) {
     return false;
 }
 
-// 找出匹配的选择器
-function findMatchingSelectors(element) {
-    if (!globalConfig.customAdSelectors || !globalConfig.customAdSelectors.length) {
-        return [];
-    }
-    
-    const matchingSelectors = [];
-    
-    // 检查元素本身
-    for (const selector of globalConfig.customAdSelectors) {
-        try {
-            if (element.matches(selector)) {
-                matchingSelectors.push(selector);
-            }
-        } catch (error) {
-            // 忽略无效选择器错误
-        }
-    }
-    
-    // 检查父元素（最多向上查找5层）
-    let parent = element.parentElement;
-    let depth = 0;
-    while (parent && depth < 5) {
-        for (const selector of globalConfig.customAdSelectors) {
-            try {
-                if (parent.matches(selector)) {
-                    matchingSelectors.push(`父元素(${depth+1}层): ${selector}`);
-                }
-            } catch (error) {
-                // 忽略无效选择器错误
-            }
-        }
-        parent = parent.parentElement;
-        depth++;
-    }
-    
-    return matchingSelectors;
-}
-
 // 运行广告拦截器
 export function runAdBlocker() {
     // 确保扩展配置允许广告拦截
-    if (!globalConfig.adBlockerEnabled || !globalConfig.customRulesEnabled) {
+    if (!globalConfig.adBlockerEnabled) {
         return;
     }
     
     console.log('正在运行广告拦截器:', {
         拦截方式: globalConfig.adRemovalMode,
         触发模式: globalConfig.adTriggerMode,
-        自定义选择器数量: globalConfig.customAdSelectors?.length || 0
+        自定义选择器数量: globalConfig.customAdSelectors?.length || 0,
+        预置规则启用: true
     });
     
     // 查找并处理广告
@@ -260,75 +205,90 @@ export function runAdBlocker() {
 
 // 查找并处理所有广告
 export function findAndProcessAds() {
-    // 查找并处理自定义规则匹配的广告元素
-    findAndProcessCustomRuleAds();
-    
-    // 查找并处理iframe广告
-    findAndProcessIframeAds();
+    // 扫描所有元素，查找广告
+    scanAllElementsForAds();
 }
 
-// 查找并处理自定义规则匹配的广告元素
-function findAndProcessCustomRuleAds() {
-    // 确保有选择器可用
-    if (!globalConfig.customAdSelectors || !globalConfig.customAdSelectors.length) {
-        return;
-    }
-    
+// 扫描所有元素查找广告
+function scanAllElementsForAds() {
     try {
-        // 根据选择器查询广告元素
-        const selector = globalConfig.customAdSelectors.join(', ');
-        const adElements = document.querySelectorAll(selector);
-        
-        if (adElements.length > 0) {
-            console.log(`找到 ${adElements.length} 个匹配自定义规则的广告元素`);
-            
-            // 处理每个广告元素
-            adElements.forEach(element => {
-                handleAdElement(element, true, false);
-            });
+        // 1. 先检查自定义规则
+        if (globalConfig.customRulesEnabled && globalConfig.customAdSelectors && globalConfig.customAdSelectors.length) {
+            try {
+                const selector = globalConfig.customAdSelectors.join(', ');
+                const adElements = document.querySelectorAll(selector);
+                
+                if (adElements.length > 0) {
+                    console.log(`找到 ${adElements.length} 个匹配自定义规则的广告元素`);
+                    
+                    // 处理每个广告元素
+                    adElements.forEach(element => {
+                        handleAdElement(element, true, false);
+                    });
+                }
+            } catch (error) {
+                console.error('处理自定义规则广告元素时出错:', error);
+            }
         }
+        
+        // 2. 然后检查所有可能的广告元素
+        // 针对性地选择可能包含广告的元素类型
+        const potentialAdElements = document.querySelectorAll('iframe, img, div, aside, section, ins, a[target="_blank"]');
+        
+        console.log(`找到 ${potentialAdElements.length} 个可能的广告元素，正在检查...`);
+        
+        potentialAdElements.forEach(element => {
+            // 如果元素已被处理，则跳过
+            if (processedElements.has(element)) return;
+            
+            // 使用预置规则检查
+            if (checkIfElementMatchesPresetRules(element)) {
+                handleAdElement(element, false, true);
+            }
+        });
+        
     } catch (error) {
-        console.error('处理自定义规则广告元素时出错:', error);
+        console.error('扫描广告元素时出错:', error);
     }
 }
 
-// 查找并处理iframe广告
-function findAndProcessIframeAds() {
-    const iframes = document.querySelectorAll('iframe');
-    console.log(`页面上发现 ${iframes.length} 个iframe，正在检查是否为广告...`);
-    
-    iframes.forEach(iframe => {
-        if (isAdIframe(iframe)) {
-            handleAdElement(iframe, false, true);
-        }
-    });
-}
-
-// 统一处理广告元素（iframe或普通DOM元素）
-function handleAdElement(element, isCustomRuleAd, isIframeAd) {
+// 统一处理广告元素
+function handleAdElement(element, isCustomRuleAd, isPresetRuleAd) {
     // 如果已处理过，跳过
     if (processedElements.has(element)) return;
     
     // 标记为已处理
     processedElements.add(element);
     
-    // 为元素添加唯一标识
+    // 为元素添加唯一标识，仅用于关联覆盖层
     const elementId = element.id || Math.random().toString(36).substring(2, 10);
     element.setAttribute('data-objection-id', elementId);
-    element.setAttribute('data-is-ad', 'true');
     
     // 根据触发模式处理
     if (globalConfig.adTriggerMode === 'auto') {
         // 自动模式下直接处理广告
         processAdElement(element);
+        console.log('自动处理广告元素:', {
+            元素类型: element.tagName,
+            ID: element.id || elementId,
+            是自定义规则广告: isCustomRuleAd,
+            是iframe广告: isPresetRuleAd
+        });
     } else if (globalConfig.adTriggerMode === 'click') {
         // 点击模式下添加覆盖层
-        addOverlayToAdElement(element, isCustomRuleAd, isIframeAd);
+        addOverlayToAdElement(element, isCustomRuleAd, isPresetRuleAd);
+        //输出调试信息
+        console.log('已为广告元素添加覆盖层:', {
+            元素类型: element.tagName,
+            ID: element.id || elementId,
+            是自定义规则广告: isCustomRuleAd,
+            是iframe广告: isPresetRuleAd
+        });
     }
 }
 
 // 为广告元素添加覆盖层
-function addOverlayToAdElement(element, isCustomRuleAd, isIframeAd) {
+function addOverlayToAdElement(element, isCustomRuleAd, isPresetRuleAd) {
     try {
         // 确保元素还在DOM中
         if (!element.parentElement) return;
@@ -352,7 +312,7 @@ function addOverlayToAdElement(element, isCustomRuleAd, isIframeAd) {
         overlay.className = 'objection-ad-overlay';
         overlay.setAttribute('data-for-element', elementId);
         overlay.setAttribute('data-is-custom-rule', isCustomRuleAd.toString());
-        overlay.setAttribute('data-is-iframe', isIframeAd.toString());
+        overlay.setAttribute('data-is-iframe', isPresetRuleAd.toString());
         
         // 设置覆盖层样式
         overlay.style.position = 'absolute';
@@ -376,7 +336,7 @@ function addOverlayToAdElement(element, isCustomRuleAd, isIframeAd) {
             元素类型: element.tagName,
             ID: element.id || elementId,
             是自定义规则广告: isCustomRuleAd,
-            是iframe广告: isIframeAd
+            是iframe广告: isPresetRuleAd
         });
         
         // 监听元素大小变化，调整覆盖层尺寸
@@ -520,26 +480,33 @@ function replaceAdElement(original, replacement, width, height) {
 
 // 设置 MutationObserver 监控 DOM 变化
 export function setupMutationObserver() {
-    if (!globalConfig.adBlockerEnabled || !globalConfig.customRulesEnabled || window._adBlockObserver) {
+    if (!globalConfig.adBlockerEnabled || window._adBlockObserver) {
         return;
     }
     
     // 创建观察者
     window._adBlockObserver = new MutationObserver(function(mutations) {
-        let needsCheck = false;
+        // 收集所有新添加的节点
+        const newNodes = [];
         
         // 检查是否有新元素添加
         for (const mutation of mutations) {
             if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                needsCheck = true;
-                break;
+                mutation.addedNodes.forEach(node => {
+                    // 只处理元素节点
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        newNodes.push(node);
+                    }
+                });
             }
         }
         
-        // 如果有新元素，重新运行广告检测
-        if (needsCheck) {
+        // 如果有新元素，只处理这些新元素
+        if (newNodes.length > 0) {
             // 延迟处理，确保元素已完全加载
-            setTimeout(findAndProcessAds, 300);
+            setTimeout(() => {
+                processNewElements(newNodes);
+            }, 300);
         }
     });
     
@@ -550,6 +517,40 @@ export function setupMutationObserver() {
     });
     
     console.log('已设置 MutationObserver 监控 DOM 变化');
+}
+
+// 处理新添加的元素
+function processNewElements(nodes) {
+    console.log(`处理 ${nodes.length} 个新添加的元素`);
+    
+    nodes.forEach(node => {
+        // 如果元素已处理，跳过
+        if (processedElements.has(node)) return;
+        
+        // 1. 检查元素本身是否是广告
+        const isCustomRule = checkIfElementMatchesCustomRules(node);
+        const isPresetRule = checkIfElementMatchesPresetRules(node);
+        
+        if (isCustomRule || isPresetRule) {
+            // 不要在这里调用isAdElement，因为它会将元素标记为已处理但不会添加覆盖层
+            handleAdElement(node, isCustomRule, isPresetRule);
+            return;
+        }
+        
+        // 2. 检查子元素是否包含广告
+        const potentialAdElements = node.querySelectorAll('iframe, img, div, aside, section, ins, a[target="_blank"]');
+        potentialAdElements.forEach(element => {
+            // 如果元素已处理，跳过
+            if (processedElements.has(element)) return;
+            
+            const isElementCustomRule = checkIfElementMatchesCustomRules(element);
+            const isElementPresetRule = checkIfElementMatchesPresetRules(element);
+            
+            if (isElementCustomRule || isElementPresetRule) {
+                handleAdElement(element, isElementCustomRule, isElementPresetRule);
+            }
+        });
+    });
 }
 
 // 创建广告替换元素 - 通用函数，处理所有类型的广告元素
