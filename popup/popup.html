@@ -49,9 +49,13 @@
                 <option value="custom">自定义</option>
             </select>
         </div>
-        <div class="input-group mb-3">
-            <span class="input-group-text" id="basic-addon1">气泡大小</span>
-            <input type="number" class="form-control" id="bubble-size" min="1" max="100" step="1" value="10">
+        <div class="mb-3">
+            <label class="form-label">气泡大小</label>
+            <input type="range" class="form-range" id="bubble-size" min="1" max="50" step="1" value="10">
+            <div class="d-flex justify-content-between">
+                <span>小</span>
+                <span>大</span>
+            </div>
         </div>
         <div class="form-check form-switch mb-3">
             <input class="form-check-input" type="checkbox" role="switch" id="objection-switch">
@@ -66,11 +70,11 @@
             <label class="form-label">广告处理方式</label>
             <div class="form-check">
                 <input class="form-check-input" type="radio" name="ad-mode" id="ad-mode-placeholder" value="placeholder" checked>
-                <label class="form-check-label" for="ad-mode-placeholder">使用提示文字替换</label>
+                <label class="form-check-label" for="ad-mode-placeholder">使用文字替换</label>
             </div>
             <div class="form-check">
                 <input class="form-check-input" type="radio" name="ad-mode" id="ad-mode-remove" value="remove">
-                <label class="form-check-label" for="ad-mode-remove">直接删除广告</label>
+                <label class="form-check-label" for="ad-mode-remove">删除广告</label>
             </div>
             <div class="form-check">
                 <input class="form-check-input" type="radio" name="ad-mode" id="ad-mode-image" value="image">
@@ -82,11 +86,11 @@
                 <label class="form-label">广告拦截触发方式</label>
                 <div class="form-check">
                     <input class="form-check-input" type="radio" name="ad-trigger-mode" id="ad-trigger-auto" value="auto" checked>
-                    <label class="form-check-label" for="ad-trigger-auto">页面加载时自动拦截</label>
+                    <label class="form-check-label" for="ad-trigger-auto">页面加载时拦截</label>
                 </div>
                 <div class="form-check">
                     <input class="form-check-input" type="radio" name="ad-trigger-mode" id="ad-trigger-click" value="click">
-                    <label class="form-check-label" for="ad-trigger-click">仅当点击广告时拦截</label>
+                    <label class="form-check-label" for="ad-trigger-click">点击广告时拦截</label>
                 </div>
             </div>
         </div>

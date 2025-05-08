@@ -122,7 +122,7 @@
                 <button class="nav-link" id="custom-tab" data-bs-toggle="tab" data-bs-target="#custom-tab-pane" type="button" role="tab" aria-controls="custom-tab-pane" aria-selected="false">自定义特效</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="filter-tab" data-bs-toggle="tab" data-bs-target="#filter-tab-pane" type="button" role="tab" aria-controls="filter-tab-pane" aria-selected="false">广告过滤规则</button>
+                <button class="nav-link" id="filter-tab" data-bs-toggle="tab" data-bs-target="#filter-tab-pane" type="button" role="tab" aria-controls="filter-tab-pane" aria-selected="false">广告拦截</button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="about-tab" data-bs-toggle="tab" data-bs-target="#about-tab-pane" type="button" role="tab" aria-controls="about-tab-pane" aria-selected="false">关于</button>
@@ -135,9 +135,9 @@
             <div class="tab-pane fade show active" id="general-tab-pane" role="tabpanel" aria-labelledby="general-tab" tabindex="0">
                 <!-- 标准设置 -->
                 <div class="section">
-                    <h4 class="section-title">标准设置</h4>
+                    <h4 class="section-title">一般设置</h4>
                     <div class="mb-3">
-                        <label for="bubble-style" class="form-label">默认气泡样式</label>
+                        <label for="bubble-style" class="form-label">气泡样式</label>
                         <select class="form-select" id="bubble-style">
                             <option value="0">异议！</option>
                             <option value="1">等等！</option>
@@ -148,7 +148,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="bubble-size" class="form-label">气泡大小</label>
-                        <input type="range" class="form-range" id="bubble-size" min="1" max="20" step="1" value="10">
+                        <input type="range" class="form-range" id="bubble-size" min="1" max="50" step="1" value="10">
                         <div class="d-flex justify-content-between">
                             <span>小</span>
                             <span>大</span>
@@ -156,11 +156,11 @@
                     </div>
                     <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" role="switch" id="objection-switch">
-                        <label class="form-check-label" for="objection-switch">启用异议效果</label>
+                        <label class="form-check-label" for="objection-switch">异议所有网页！</label>
                     </div>
                     <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" role="switch" id="ad-blocker-switch">
-                        <label class="form-check-label" for="ad-blocker-switch">启用广告拦截</label>
+                        <label class="form-check-label" for="ad-blocker-switch">异议所有广告！</label>
                     </div>
                     <div id="ad-mode-group" style="display: none;">
                         <label class="form-label">广告处理方式</label>
@@ -182,11 +182,11 @@
                             <label class="form-label">广告拦截触发方式</label>
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="ad-trigger-mode" id="ad-trigger-auto" value="auto" checked>
-                                <label class="form-check-label" for="ad-trigger-auto">页面加载时自动拦截</label>
+                                <label class="form-check-label" for="ad-trigger-auto">页面加载时拦截</label>
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="ad-trigger-mode" id="ad-trigger-click" value="click">
-                                <label class="form-check-label" for="ad-trigger-click">仅当点击广告时拦截</label>
+                                <label class="form-check-label" for="ad-trigger-click">点击广告时拦截</label>
                             </div>
                         </div>
                     </div>
@@ -197,12 +197,12 @@
             <div class="tab-pane fade" id="custom-tab-pane" role="tabpanel" aria-labelledby="custom-tab" tabindex="0">
                 <!-- 自定义气泡设置 -->
                 <div class="section">
-                    <h4 class="section-title">自定义气泡设置</h4>
-                    <p class="text-muted">上传您自己的图像和音频来替换点击特效</p>
+                    <h4 class="section-title">自定义特效</h4>
+                    <p class="text-muted">替换点击时显示的图像和播放的音频</p>
                     
                     <div class="preview-container">
                         <h5>预览效果</h5>
-                        <img id="preview-custom-image" src="../images/jp_objection.png" class="preview-image" alt="自定义气泡预览">
+                        <img id="preview-custom-image" src="../images/jp_objection.png" class="preview-image" alt="自定义效果预览">
                         <div>
                             <button id="test-custom-effect" class="btn btn-primary">测试效果</button>
                         </div>
@@ -226,7 +226,7 @@
 
                 <!-- 保存库区域 -->
                 <div class="section">
-                    <h4 class="section-title">我的自定义特效库</h4>
+                    <h4 class="section-title">已保存的自定义特效</h4>
                     <p class="text-muted">管理您保存的多个自定义特效</p>
                     
                     <div id="custom-effects-list">
@@ -243,7 +243,7 @@
             <div class="tab-pane fade" id="filter-tab-pane" role="tabpanel" aria-labelledby="filter-tab" tabindex="0">
                 <div class="section">
                     <h4 class="section-title">广告过滤规则</h4>
-                    <p class="text-muted">添加和管理自定义广告过滤规则，兼容Adguard规则</p>
+                    <p class="text-muted">自定义广告过滤规则（使用Adguard规则）</p>
 
                     <div class="mb-3">
                         <label for="new-rule" class="form-label">添加新规则</label>
@@ -289,11 +289,12 @@
             <div class="tab-pane fade" id="about-tab-pane" role="tabpanel" aria-labelledby="about-tab" tabindex="0">
                 <div class="section">
                     <h4 class="section-title">关于</h4>
-                    <p>感谢您使用 <strong>异议扩展</strong>！</p>
-                    <p>这是一个用于增强浏览体验的扩展，提供了自定义点击特效和广告过滤功能。</p>
-                    <p>如果您有任何问题或建议，请访问我们的 <a href="https://github.com/your-repo" target="_blank">GitHub 项目页面</a>。</p>
-                    <p>版本: 1.0.0</p>
+                    <p>感谢您使用 <strong>自动异议</strong>！</p>
+                    <p>官网：<a target="_blank" href="https://objection.yvfox.com/">自动异议</a></p>
+                    <p>开源地址：<a href="https://github.com/" target="_blank">GitHub</a></p>
+                    <p>版本: 2.0.1</p>
                     <p>开发者: Canyu</p>
+                    <p><a href="https://space.bilibili.com/380054694" target="_blank">bilibili@坎尤</a></p>
                 </div>
             </div>
         </div>

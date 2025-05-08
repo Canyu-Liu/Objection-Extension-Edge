@@ -103,7 +103,7 @@ export function handleDocumentClick(event) {
     
     // 输出被点击元素的关键信息
     const clickedElement = event.target;
-    console.log('===== 异议扩展广告拦截调试信息 =====');
+    console.log('===== 自动异议调试信息 =====');
     console.log('点击元素信息:', {
         标签名: clickedElement.tagName,
         ID: clickedElement.id || '无',
@@ -118,8 +118,7 @@ export function handleDocumentClick(event) {
         return;
     }
     
-    // 由于元素在页面加载和DOM变化时已经被检查和标记
-    // 我们检查元素是否已经被处理过
+    // 检查元素是否已经被处理过
     if (processedElements.has(clickedElement) || clickedElement.getAttribute('data-objection-id')) {
         console.log('元素已被识别为广告，显示特效');
         
@@ -593,18 +592,18 @@ function createAdReplacement(type, width, height) {
         container.appendChild(bgImage);
         
         // 添加尺寸指示
-        const sizeIndicator = document.createElement('div');
-        sizeIndicator.style.position = 'absolute';
-        sizeIndicator.style.bottom = '5px';
-        sizeIndicator.style.right = '5px';
-        sizeIndicator.style.fontSize = '10px';
-        sizeIndicator.style.color = '#fff';
-        sizeIndicator.style.backgroundColor = 'rgba(0,0,0,0.5)';
-        sizeIndicator.style.padding = '2px 4px';
-        sizeIndicator.style.borderRadius = '2px';
-        sizeIndicator.style.zIndex = '2';
-        sizeIndicator.textContent = `${Math.round(width)} × ${Math.round(height)}`;
-        container.appendChild(sizeIndicator);
+        // const sizeIndicator = document.createElement('div');
+        // sizeIndicator.style.position = 'absolute';
+        // sizeIndicator.style.bottom = '5px';
+        // sizeIndicator.style.right = '5px';
+        // sizeIndicator.style.fontSize = '10px';
+        // sizeIndicator.style.color = '#fff';
+        // sizeIndicator.style.backgroundColor = 'rgba(0,0,0,0.5)';
+        // sizeIndicator.style.padding = '2px 4px';
+        // sizeIndicator.style.borderRadius = '2px';
+        // sizeIndicator.style.zIndex = '2';
+        // sizeIndicator.textContent = `${Math.round(width)} × ${Math.round(height)}`;
+        // container.appendChild(sizeIndicator);
     } else {
         // 占位符替换
         container.style.backgroundColor = '#f0f0f0';

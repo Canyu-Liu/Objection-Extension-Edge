@@ -31,7 +31,7 @@ export function renderCustomEffectsLibrary() {
     if (customEffectsLibrary.length === 0) {
         const emptyMessage = document.createElement('div');
         emptyMessage.className = 'text-center text-muted py-3';
-        emptyMessage.textContent = '您的特效库是空的，请添加自定义特效';
+        emptyMessage.textContent = '您的库是空的，请添加图片和音频。';
         elements.customEffectsList.appendChild(emptyMessage);
         return;
     }
