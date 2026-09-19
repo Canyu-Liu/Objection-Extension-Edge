@@ -2,6 +2,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // 获取所有UI元素的引用
     const bubbleSelect = document.getElementById('bubble-style');
     const sizeInput = document.getElementById('bubble-size');
+    const effectVolumeInput = document.getElementById('effect-volume-input');
+    const effectVolumeValue = document.getElementById('effect-volume-value');
     const toggleSwitch = document.getElementById('objection-switch');
     const headerLink = document.getElementById('header-link');
     const adBlockerSwitch = document.getElementById('ad-blocker-switch');
@@ -24,6 +26,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 设置界面元素状态
                 bubbleSelect.value = config.bubbleType;
                 sizeInput.value = config.bubbleSize;
+                effectVolumeInput.value = config.effectVolume ?? 70;
+                effectVolumeValue.textContent = `${effectVolumeInput.value}%`;
                 toggleSwitch.checked = config.isEnabled;
                 adBlockerSwitch.checked = config.adBlockerEnabled;
                 
@@ -79,6 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const config = {
             bubbleType: bubbleSelect.value,
             bubbleSize: sizeInput.value,
+            effectVolume: Number(effectVolumeInput.value),
             isEnabled: toggleSwitch.checked,
             adBlockerEnabled: adBlockerSwitch.checked,
             adRemovalMode: currentAdMode,
@@ -130,6 +135,14 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     sizeInput.addEventListener('change', function() {
+        sendConfig();
+    });
+
+    effectVolumeInput.addEventListener('input', function() {
+        effectVolumeValue.textContent = `${this.value}%`;
+    });
+
+    effectVolumeInput.addEventListener('change', function() {
         sendConfig();
     });
 

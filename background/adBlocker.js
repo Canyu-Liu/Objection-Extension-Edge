@@ -1,5 +1,7 @@
 // 广告拦截规则模块 - 处理广告过滤规则的解析、组织和匹配
 
+import { centralConfig } from './config.js';
+
 // 广告规则类型枚举
 export const RULE_TYPES = {
   ELEMENT_HIDING: 'ELEMENT_HIDING',      // 元素隐藏规则: ##.ad
@@ -34,29 +36,27 @@ function escapeRegExp(string) {
  * @returns {RegExp|null} - 转换后的正则表达式
  */
 function convertUrlRuleToRegex(rule) {
-  let regexStr = rule;
-  
-  // 处理开头的竖线(代表开始)
-  if (regexStr.startsWith('||')) {
-    regexStr = regexStr.substring(2);
-    regexStr = '(^|\\.)' + escapeRegExp(regexStr);
-  } else if (regexStr.startsWith('|')) {
-    regexStr = regexStr.substring(1);
-    regexStr = '^' + escapeRegExp(regexStr);
+  let regexStr;
+
+  // 处理开头的竖线：|| 表示域名边界，| 表示 URL 开始
+  if (rule.startsWith('||')) {
+    regexStr = '(^|[^\\w-])' + escapeRegExp(rule.substring(2));
+  } else if (rule.startsWith('|')) {
+    regexStr = '^' + escapeRegExp(rule.substring(1));
   } else {
-    regexStr = escapeRegExp(regexStr);
+    regexStr = escapeRegExp(rule);
   }
-  
-  // 处理结尾的竖线(代表结束)
-  if (regexStr.endsWith('|')) {
-    regexStr = regexStr.substring(0, regexStr.length - 1) + '$';
+
+  // 处理结尾的竖线（escapeRegExp 后为 \\|）
+  if (regexStr.endsWith('\\|')) {
+    regexStr = regexStr.substring(0, regexStr.length - 2) + '$';
   }
-  
+
   // 处理特殊字符
   regexStr = regexStr
-    .replace(/\\\^/g, '(?:[^\\w\\d_.%-]|$)') // ^ 表示分隔符
-    .replace(/\\\*/g, '.*');                  // * 表示任意字符
-  
+    .replace(/\\\^/g, '(?:[^\\w\\d_.%-]|$)')
+    .replace(/\\\*/g, '.*');
+
   try {
     return new RegExp(regexStr, 'i');
   } catch (e) {
@@ -78,8 +78,12 @@ export function parseFilterRule(rule) {
     return null;
   }
   
-  // 处理注释
-  if (trimmedRule.startsWith('!') || trimmedRule.startsWith('#')) {
+  // 处理注释，但不要把 ##、#?# 和 #@# 规则误判为注释
+  if (trimmedRule.startsWith('!') ||
+      (trimmedRule.startsWith('#') &&
+       !trimmedRule.startsWith('##') &&
+       !trimmedRule.startsWith('#?#') &&
+       !trimmedRule.startsWith('#@#'))) {
     return {
       type: RULE_TYPES.COMMENT,
       content: trimmedRule
@@ -266,7 +270,7 @@ export function validateFilterRules(rules) {
       let ruleType = '未知';
       
       if (parsedRule) {
-        isValid = true;
+        isValid = parsedRule.type !== RULE_TYPES.UNKNOWN;
         
         switch (parsedRule.type) {
           case RULE_TYPES.ELEMENT_HIDING:
@@ -312,7 +316,8 @@ export function validateFilterRules(rules) {
  * @returns {Object} - 检查结果
  */
 export function checkUrlBlocking(url) {
-  if (!url || typeof url !== 'string') {
+  if (!url || typeof url !== 'string' ||
+      !centralConfig.adBlockerEnabled || !centralConfig.customRulesEnabled) {
     return { blocked: false };
   }
   
@@ -369,7 +374,7 @@ export function checkUrlBlocking(url) {
  * @param {Array<Object>} newRules - 新规则数组
  */
 export function updateFilterRules(newRules) {
-  customFilterRules = newRules;
+  customFilterRules = Array.isArray(newRules) ? newRules : [];
   organizeRules();
 }
 
@@ -378,21 +383,51 @@ export function updateFilterRules(newRules) {
  * @param {string} domain - 网站域名
  * @returns {Array<string>} - CSS选择器数组
  */
-export function generateSelectorsForDomain(domain) {
-  // 获取当前网页域名的相关规则
-  const domainRules = parsedRules.domainRules[domain] || {
-    elementHiding: [],
-    elementHidingException: []
-  };
-  
-  // 准备选择器列表
-  const selectors = [...parsedRules.globalRules
-    .filter(r => r.type === RULE_TYPES.ELEMENT_HIDING)
-    .map(r => r.selector)];
-    
-  if (domainRules.elementHiding && domainRules.elementHiding.length) {
-    selectors.push(...domainRules.elementHiding.map(r => r.selector));
+function domainMatches(domain, ruleDomain) {
+  const normalizedDomain = domain.toLowerCase();
+  const normalizedRuleDomain = ruleDomain.toLowerCase();
+  return normalizedDomain === normalizedRuleDomain || normalizedDomain.endsWith(`.${normalizedRuleDomain}`);
+}
+
+function ruleAppliesToDomain(domains, domain) {
+  if (!domains || domains.length === 0) {
+    return true;
   }
-  
-  return selectors;
+
+  const includedDomains = domains.filter(ruleDomain => !ruleDomain.startsWith('~'));
+  const excludedDomains = domains
+    .filter(ruleDomain => ruleDomain.startsWith('~'))
+    .map(ruleDomain => ruleDomain.substring(1));
+
+  if (excludedDomains.some(ruleDomain => domainMatches(domain, ruleDomain))) {
+    return false;
+  }
+
+  return includedDomains.length === 0 || includedDomains.some(ruleDomain => domainMatches(domain, ruleDomain));
+}
+
+export function generateSelectorsForDomain(domain) {
+  const selectors = [];
+  const exceptions = [];
+
+  customFilterRules.forEach(rule => {
+    const ruleText = rule.text || rule;
+    const parsedRule = parseFilterRule(ruleText);
+    if (!parsedRule || parsedRule.type === RULE_TYPES.COMMENT ||
+        parsedRule.type === RULE_TYPES.UNKNOWN || rule.enabled === false) {
+      return;
+    }
+
+    if (!ruleAppliesToDomain(parsedRule.domains, domain)) {
+      return;
+    }
+
+    if (parsedRule.type === RULE_TYPES.ELEMENT_HIDING) {
+      selectors.push(parsedRule.selector);
+    } else if (parsedRule.type === RULE_TYPES.ELEMENT_HIDING_EXCEPTION) {
+      exceptions.push(parsedRule.selector);
+    }
+  });
+
+  return selectors.filter(selector => !exceptions.includes(selector));
 }

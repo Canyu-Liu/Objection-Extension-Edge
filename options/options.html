@@ -51,6 +51,8 @@
         .custom-item {
             display: flex;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
             margin-bottom: 10px;
             padding: 10px;
             border: 1px solid #eee;
@@ -63,10 +65,14 @@
             object-fit: contain;
         }
         .custom-item-content {
-            flex-grow: 1;
+            flex: 1 1 180px;
+            min-width: 0;
         }
         .custom-item-actions {
-            margin-left: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-left: auto;
         }
         /* 添加广告过滤规则样式 */
         .rules-container {
@@ -103,6 +109,19 @@
         }
         .tab-content {
             padding-top: 10px;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root { color-scheme: dark; }
+            body { background-color: #1f2328; color: #f0f3f6; }
+            .container { background-color: #2b3137; }
+            .section { border-color: #444c56; }
+            .section-title { color: #f0f3f6; }
+            .preview-container, .custom-item, .rules-container { border-color: #444c56; }
+            .rule-item:hover { background-color: #343b43; }
+            .text-muted, .form-text { color: #adb5bd !important; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .shake { animation: none !important; }
         }
     </style>
 </head>
@@ -154,6 +173,17 @@
                             <span>大</span>
                         </div>
                     </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <label class="form-label mb-1" for="effect-volume-input">异议特效音量</label>
+                            <output id="effect-volume-value" for="effect-volume-input">70%</output>
+                        </div>
+                        <input type="range" class="form-range" id="effect-volume-input" min="0" max="100" step="1" value="70">
+                        <div class="d-flex justify-content-between">
+                            <span>静音</span>
+                            <span>最大</span>
+                        </div>
+                    </div>
                     <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" role="switch" id="objection-switch">
                         <label class="form-check-label" for="objection-switch">异议所有网页！</label>
@@ -163,7 +193,8 @@
                         <label class="form-check-label" for="ad-blocker-switch">异议所有广告！</label>
                     </div>
                     <div id="ad-mode-group" style="display: none;">
-                        <label class="form-label">广告处理方式</label>
+                        <label class="form-label" id="ad-mode-label">广告处理方式</label>
+                        <div role="radiogroup" aria-labelledby="ad-mode-label">
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="ad-mode" id="ad-mode-placeholder" value="placeholder" checked>
                             <label class="form-check-label" for="ad-mode-placeholder">使用提示文字替换</label>
@@ -176,10 +207,12 @@
                             <input class="form-check-input" type="radio" name="ad-mode" id="ad-mode-image" value="image">
                             <label class="form-check-label" for="ad-mode-image">使用图片替换</label>
                         </div>
+                        </div>
                         
                         <!-- 添加广告拦截触发方式选择 -->
                         <div class="mt-3">
-                            <label class="form-label">广告拦截触发方式</label>
+                            <label class="form-label" id="ad-trigger-label">广告拦截触发方式</label>
+                            <div role="radiogroup" aria-labelledby="ad-trigger-label">
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="ad-trigger-mode" id="ad-trigger-auto" value="auto" checked>
                                 <label class="form-check-label" for="ad-trigger-auto">页面加载时拦截</label>
@@ -187,6 +220,7 @@
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="ad-trigger-mode" id="ad-trigger-click" value="click">
                                 <label class="form-check-label" for="ad-trigger-click">点击广告时拦截</label>
+                            </div>
                             </div>
                         </div>
                     </div>
@@ -292,7 +326,7 @@
                     <p>感谢您使用 <strong>自动异议</strong>！</p>
                     <p>官网：<a target="_blank" href="https://objection.yvfox.com/">自动异议</a></p>
                     <p>开源地址：<a href="https://github.com/Canyu-Liu/Objection-Extension-Edge" target="_blank">GitHub</a></p>
-                    <p>版本: 2.0.1</p>
+                    <p>版本: 2.1.1</p>
                     <p>开发者: Canyu</p>
                     <p><a href="https://space.bilibili.com/380054694" target="_blank">bilibili@坎尤</a></p>
                 </div>
@@ -300,7 +334,7 @@
         </div>
 
         <div class="d-flex justify-content-between">
-            <a href="popup.html" class="btn btn-link">返回</a>
+            <a href="../popup/popup.html" class="btn btn-link">返回</a>
             <button id="save-all" class="btn btn-primary">保存所有设置</button>
         </div>
     </div>

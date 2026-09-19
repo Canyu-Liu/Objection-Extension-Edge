@@ -1,6 +1,16 @@
 // 广告拦截器模块
 import { globalConfig, processedElements, adBlockerPresetRules } from './config.js';
 
+let adBlockerClickHandler = null;
+
+function removeOverlay(overlay) {
+    if (!overlay) return;
+    if (typeof overlay._objectionCleanup === 'function') {
+        overlay._objectionCleanup();
+    }
+    overlay.remove();
+}
+
 // 检测元素是否为广告元素（统一判断函数，适用于所有HTML元素）
 export function isAdElement(element) {
     if (!element || !element.tagName) return false;
@@ -139,6 +149,10 @@ export function handleDocumentClick(event) {
 
 // 处理广告覆盖层点击
 function handleAdOverlayClick(event, overlay) {
+    if (!globalConfig.adBlockerEnabled || globalConfig.adTriggerMode !== 'click') {
+        return;
+    }
+
     event.preventDefault();
     event.stopPropagation();
     
@@ -161,7 +175,7 @@ function handleAdOverlayClick(event, overlay) {
             setTimeout(() => {
                 processAdElement(adElement);
                 // 移除覆盖层
-                overlay.parentElement?.removeChild(overlay);
+                removeOverlay(overlay);
             }, 1000); // 与特效持续时间保持一致
         }
     });
@@ -260,7 +274,9 @@ function handleAdElement(element, isCustomRuleAd, isPresetRuleAd) {
     processedElements.add(element);
     
     // 为元素添加唯一标识，仅用于关联覆盖层
-    const elementId = element.id || Math.random().toString(36).substring(2, 10);
+    const elementId = typeof crypto?.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
     element.setAttribute('data-objection-id', elementId);
     
     // 根据触发模式处理
@@ -297,15 +313,6 @@ function addOverlayToAdElement(element, isCustomRuleAd, isPresetRuleAd) {
         const existingOverlay = document.querySelector(`.objection-ad-overlay[data-for-element="${elementId}"]`);
         if (existingOverlay) return;
         
-        // 获取元素的尺寸和位置
-        const rect = element.getBoundingClientRect();
-        
-        // 如果元素的父元素没有定位，添加相对定位
-        const parentStyle = window.getComputedStyle(element.parentElement);
-        if (parentStyle.position === 'static') {
-            element.parentElement.style.position = 'relative';
-        }
-        
         // 创建覆盖层
         const overlay = document.createElement('div');
         overlay.className = 'objection-ad-overlay';
@@ -314,22 +321,34 @@ function addOverlayToAdElement(element, isCustomRuleAd, isPresetRuleAd) {
         overlay.setAttribute('data-is-iframe', isPresetRuleAd.toString());
         
         // 设置覆盖层样式
-        overlay.style.position = 'absolute';
-        overlay.style.top = (element.offsetTop || 0) + 'px';
-        overlay.style.left = (element.offsetLeft || 0) + 'px';
-        overlay.style.width = (element.offsetWidth || rect.width) + 'px';
-        overlay.style.height = (element.offsetHeight || rect.height) + 'px';
+        overlay.style.position = 'fixed';
         overlay.style.zIndex = '9999';
         overlay.style.cursor = 'pointer';
         overlay.style.backgroundColor = 'transparent';
-        
+
+        const updateOverlayPosition = () => {
+            if (!element.isConnected || !overlay.isConnected) {
+                removeOverlay(overlay);
+                return;
+            }
+
+            const currentRect = element.getBoundingClientRect();
+            overlay.style.top = `${currentRect.top}px`;
+            overlay.style.left = `${currentRect.left}px`;
+            overlay.style.width = `${currentRect.width}px`;
+            overlay.style.height = `${currentRect.height}px`;
+        };
+
         // 添加点击事件
         overlay.addEventListener('click', (event) => {
             handleAdOverlayClick(event, overlay);
         });
         
-        // 添加覆盖层到元素的父元素
-        element.parentElement.appendChild(overlay);
+        // 覆盖层固定在视口中，避免改变网页父元素布局
+        document.body.appendChild(overlay);
+        updateOverlayPosition();
+        window.addEventListener('resize', updateOverlayPosition);
+        window.addEventListener('scroll', updateOverlayPosition, true);
         
         console.log('成功为广告元素添加覆盖层:', {
             元素类型: element.tagName,
@@ -339,21 +358,17 @@ function addOverlayToAdElement(element, isCustomRuleAd, isPresetRuleAd) {
         });
         
         // 监听元素大小变化，调整覆盖层尺寸
+        let resizeObserver = null;
         if ('ResizeObserver' in window) {
-            const resizeObserver = new ResizeObserver(entries => {
-                for (const entry of entries) {
-                    if (entry.target === element) {
-                        overlay.style.top = (element.offsetTop || 0) + 'px';
-                        overlay.style.left = (element.offsetLeft || 0) + 'px';
-                        overlay.style.width = (element.offsetWidth || entry.contentRect.width) + 'px';
-                        overlay.style.height = (element.offsetHeight || entry.contentRect.height) + 'px';
-                    }
-                }
-            });
-            
-            // 观察元素尺寸变化
+            resizeObserver = new ResizeObserver(updateOverlayPosition);
             resizeObserver.observe(element);
         }
+
+        overlay._objectionCleanup = () => {
+            resizeObserver?.disconnect();
+            window.removeEventListener('resize', updateOverlayPosition);
+            window.removeEventListener('scroll', updateOverlayPosition, true);
+        };
     } catch (error) {
         console.error('为广告元素添加覆盖层时出错:', error);
     }
@@ -380,7 +395,7 @@ function processAdElement(element) {
         const elementId = element.getAttribute('data-objection-id');
         const overlayElement = document.querySelector(`.objection-ad-overlay[data-for-element="${elementId}"]`);
         if (overlayElement) {
-            overlayElement.parentElement?.removeChild(overlayElement);
+            removeOverlay(overlayElement);
         }
         
         switch (globalConfig.adRemovalMode) {
@@ -477,6 +492,36 @@ function replaceAdElement(original, replacement, width, height) {
     console.log(`广告元素已被替换为 ${globalConfig.adRemovalMode === 'image' ? '图像' : '占位符'}`);
 }
 
+// 设置广告拦截点击监听
+export function setupAdBlockerClickMode() {
+    if (!globalConfig.adBlockerEnabled || globalConfig.adTriggerMode !== 'click' || adBlockerClickHandler) {
+        return;
+    }
+
+    adBlockerClickHandler = handleDocumentClick;
+    document.addEventListener('click', adBlockerClickHandler, true);
+}
+
+// 移除广告拦截点击监听和覆盖层
+export function teardownAdBlockerClickMode() {
+    if (adBlockerClickHandler) {
+        document.removeEventListener('click', adBlockerClickHandler, true);
+        adBlockerClickHandler = null;
+    }
+
+    document.querySelectorAll('.objection-ad-overlay').forEach(removeOverlay);
+}
+
+// 移除广告拦截 MutationObserver
+export function stopMutationObserver() {
+    if (!window._adBlockObserver) {
+        return;
+    }
+
+    window._adBlockObserver.disconnect();
+    delete window._adBlockObserver;
+}
+
 // 设置 MutationObserver 监控 DOM 变化
 export function setupMutationObserver() {
     if (!globalConfig.adBlockerEnabled || window._adBlockObserver) {
@@ -485,6 +530,10 @@ export function setupMutationObserver() {
     
     // 创建观察者
     window._adBlockObserver = new MutationObserver(function(mutations) {
+        if (!globalConfig.adBlockerEnabled) {
+            return;
+        }
+
         // 收集所有新添加的节点
         const newNodes = [];
         
@@ -520,6 +569,10 @@ export function setupMutationObserver() {
 
 // 处理新添加的元素
 function processNewElements(nodes) {
+    if (!globalConfig.adBlockerEnabled) {
+        return;
+    }
+
     console.log(`处理 ${nodes.length} 个新添加的元素`);
     
     nodes.forEach(node => {
@@ -568,7 +621,7 @@ function createAdReplacement(type, width, height) {
     if (type === 'image') {
         // 添加图像替换
         const bgImage = document.createElement('img');
-        bgImage.src = chrome.runtime.getURL('images/fill.jpg');
+        bgImage.src = chrome.runtime.getURL('images/repeat.jpg');
         bgImage.style.width = '100%';
         bgImage.style.height = '100%';
         bgImage.style.objectFit = 'contain';

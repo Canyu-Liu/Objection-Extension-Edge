@@ -2,6 +2,7 @@
 import { globalConfig, updateConfig } from './config.js';
 import { elements } from './ui.js';
 import { showMessage } from './utils.js';
+import { parseFilterRule, RULE_TYPES } from '../../background/adBlocker.js';
 
 /**
  * 渲染广告过滤规则列表
@@ -44,16 +45,18 @@ export function renderAdFilterRules() {
         
         const toggleBtn = document.createElement('button');
         toggleBtn.className = 'btn btn-sm btn-outline-secondary';
-        toggleBtn.innerHTML = rule.enabled ? 
-            '<i class="bi bi-toggle-on"></i>' : 
-            '<i class="bi bi-toggle-off"></i>';
+        toggleBtn.textContent = rule.enabled ? '禁用' : '启用';
+        toggleBtn.type = 'button';
         toggleBtn.title = rule.enabled ? '禁用规则' : '启用规则';
+        toggleBtn.setAttribute('aria-label', rule.enabled ? '禁用规则' : '启用规则');
         toggleBtn.onclick = () => toggleRule(index);
         
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'btn btn-sm btn-outline-danger';
-        deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+        deleteBtn.type = 'button';
+        deleteBtn.textContent = '删除';
         deleteBtn.title = '删除规则';
+        deleteBtn.setAttribute('aria-label', '删除规则');
         deleteBtn.onclick = () => deleteRule(index);
         
         ruleActions.appendChild(toggleBtn);
@@ -82,6 +85,11 @@ export function validateRule(ruleText) {
         return { valid: true, type: 'comment' };
     }
     
+    const parsedRule = parseFilterRule(ruleText);
+    if (!parsedRule || parsedRule.type === RULE_TYPES.UNKNOWN) {
+        return { valid: false, message: '无法识别此 AdGuard 规则格式' };
+    }
+
     // 检查规则是否已存在
     const adFilterRules = globalConfig.adFilterRules || [];
     const existingRule = adFilterRules.find(rule => rule.text === ruleText);
@@ -247,6 +255,7 @@ export function importRules(fileContent) {
     const lines = fileContent.split('\n');
     let importedCount = 0;
     let skippedCount = 0;
+    let invalidCount = 0;
     
     // 处理每一行
     lines.forEach(line => {
@@ -273,6 +282,8 @@ export function importRules(fileContent) {
             importedCount++;
         } else if (validation.message === '该规则已存在') {
             skippedCount++;
+        } else {
+            invalidCount++;
         }
     });
     
@@ -284,9 +295,9 @@ export function importRules(fileContent) {
     
     // 显示导入结果
     if (importedCount > 0) {
-        showMessage(`已导入 ${importedCount} 条规则，跳过 ${skippedCount} 条重复规则`, 'success');
+        showMessage(`已导入 ${importedCount} 条规则，跳过 ${skippedCount} 条重复规则和 ${invalidCount} 条无效规则`, 'success');
     } else {
-        showMessage(`导入完成，跳过 ${skippedCount} 条重复规则`, 'info');
+        showMessage(`导入完成，跳过 ${skippedCount} 条重复规则和 ${invalidCount} 条无效规则`, 'info');
     }
 }
 

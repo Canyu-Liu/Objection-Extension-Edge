@@ -4,6 +4,7 @@
 export const globalConfig = {
     bubbleType: '0',      // 气泡类型：0-异议，1-等等，2-看招，3-随机，custom-自定义
     bubbleSize: '10',     // 气泡大小
+    effectVolume: 70,     // 异议特效音量：0-100
     isEnabled: false,     // 扩展开关状态
     adBlockerEnabled: false, // 广告拦截功能开关状态
     adRemovalMode: 'placeholder', // 广告处理方式: placeholder-占位符, remove-直接删除, image-图片替换

@@ -1,9 +1,9 @@
 // 后台设置页面主脚本 - 模块化版本
-import { loadSettings, saveAllSettings, globalConfig } from './modules/config.js';
-import { initializeUI, elements, updateUIFromConfig, getCurrentUISettings, handleAdBlockerChange, handleObjectionToggle } from './modules/ui.js';
+import { loadSettings, saveAllSettings, globalConfig, updateConfig } from './modules/config.js';
+import { initializeUI, elements, updateUIFromConfig, getCurrentUISettings, handleAdBlockerChange, handleObjectionToggle, handleEffectVolumeChange } from './modules/ui.js';
 import { renderAdFilterRules, initializeAdRulesEvents } from './modules/adRules.js';
 import { initializeCustomEffectsData, renderCustomEffectsLibrary, initializeCustomEffectsEvents } from './modules/customEffects.js';
-import { addBootstrapIcons, addShakeAnimation } from './modules/utils.js';
+import { addShakeAnimation } from './modules/utils.js';
 
 /**
  * 监听存储变化，实时更新设置页面
@@ -15,6 +15,9 @@ function setupStorageChangeListener() {
         // 重新加载设置并更新界面
         loadSettings(function(config) {
             updateUIFromConfig(config);
+            initializeCustomEffectsData();
+            renderCustomEffectsLibrary();
+            renderAdFilterRules();
         });
     });
 }
@@ -25,9 +28,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 初始化UI元素
     initializeUI();
-    
-    // 添加Bootstrap图标
-    addBootstrapIcons();
     
     // 添加抖动动画样式
     addShakeAnimation();
@@ -63,6 +63,30 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // 一般设置即时保存
+    if (elements.bubbleSelect) {
+        elements.bubbleSelect.addEventListener('change', function() {
+            updateConfig({ bubbleType: this.value }, '设置已保存');
+        });
+    }
+    if (elements.sizeInput) {
+        elements.sizeInput.addEventListener('change', function() {
+            updateConfig({ bubbleSize: this.value }, '设置已保存');
+        });
+    }
+
+    // 处理异议特效音量变化
+    if (elements.effectVolumeInput) {
+        elements.effectVolumeInput.addEventListener('input', function() {
+            if (elements.effectVolumeValue) {
+                elements.effectVolumeValue.textContent = `${this.value}%`;
+            }
+        });
+        elements.effectVolumeInput.addEventListener('change', function() {
+            handleEffectVolumeChange(this.value);
+        });
+    }
+
     // 处理异议效果开关变化
     if (elements.toggleSwitch) {
         elements.toggleSwitch.addEventListener('change', function() {
@@ -76,6 +100,22 @@ document.addEventListener('DOMContentLoaded', function() {
             handleAdBlockerChange(this.checked);
         });
     }
-    
+
+    // 处理广告处理方式和触发方式
+    [elements.adModePlaceholder, elements.adModeRemove, elements.adModeImage].forEach(input => {
+        if (input) {
+            input.addEventListener('change', function() {
+                if (this.checked) updateConfig({ adRemovalMode: this.value }, '设置已保存');
+            });
+        }
+    });
+    [elements.adTriggerAuto, elements.adTriggerClick].forEach(input => {
+        if (input) {
+            input.addEventListener('change', function() {
+                if (this.checked) updateConfig({ adTriggerMode: this.value }, '设置已保存');
+            });
+        }
+    });
+
     console.log('选项页面初始化完成');
 });

@@ -1,6 +1,6 @@
 {
     "name": "__MSG_name__",
-    "version": "2.0.1",
+    "version": "2.1.1",
     "manifest_version": 3,
     "description": "__MSG_description__",
     "default_locale": "zh_CN",
@@ -20,8 +20,7 @@
     "content_scripts": [
         {
             "matches": ["<all_urls>"],
-            "js": ["content-scripts/content.js"],
-            "type": "module"
+            "js": ["content-scripts/content.js"]
         }
     ],
     "options_ui": {

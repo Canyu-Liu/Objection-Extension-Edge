@@ -7,6 +7,7 @@ import { showMessage } from './utils.js';
 export const globalConfig = {
     bubbleType: '0',       // 气泡类型：0-异议，1-等等，2-看招，3-随机，custom-自定义
     bubbleSize: '10',      // 气泡大小
+    effectVolume: 70,      // 异议特效音量：0-100
     isEnabled: false,      // 扩展开关状态
     adBlockerEnabled: false, // 广告拦截功能开关状态
     adRemovalMode: 'placeholder', // 广告处理方式: placeholder-占位符, remove-直接删除, image-图片替换
@@ -88,35 +89,13 @@ export function updateConfig(newConfig, successMessage) {
  */
 export async function saveCustomSettings(customData) {
     if (!customData) return;
-    
+
     console.log('保存自定义设置', {
         hasCustomImage: !!customData.customImage,
         customImageLength: customData.customImage ? customData.customImage.length : 0,
         hasCustomAudio: !!customData.customAudio
     });
-    
-    // 分别保存数据到不同存储
-    // 基本设置保存到sync存储（跨设备同步）
-    if (customData.bubbleType) {
-        chrome.storage.sync.set({
-            bubbleType: customData.bubbleType
-        }, function() {
-            console.log('基本设置已保存到sync存储');
-        });
-    }
-    
-    // 大型数据保存到local存储
-    const localData = {};
-    if (customData.customImage !== undefined) localData.customImage = customData.customImage;
-    if (customData.customAudio !== undefined) localData.customAudio = customData.customAudio;
-    
-    if (Object.keys(localData).length > 0) {
-        chrome.storage.local.set(localData, function() {
-            console.log('自定义图像和音频已保存到local存储');
-        });
-    }
-    
-    // 更新配置
+
     return updateConfig(customData, '自定义设置已保存');
 }
 
@@ -136,35 +115,6 @@ export async function saveAllSettings(allSettings) {
         rulesCount: allSettings.adFilterRules?.length || 0
     });
 
-    // 基本设置保存到sync存储
-    const syncData = {};
-    ['bubbleType', 'bubbleSize', 'isEnabled', 'adBlockerEnabled', 
-     'adRemovalMode', 'adTriggerMode', 'customRulesEnabled'].forEach(key => {
-        if (allSettings[key] !== undefined) {
-            syncData[key] = allSettings[key];
-        }
-    });
-    
-    if (Object.keys(syncData).length > 0) {
-        chrome.storage.sync.set(syncData, function() {
-            console.log('基本设置已保存到sync存储');
-        });
-    }
-    
-    // 大型数据保存到local存储
-    const localData = {};
-    ['customImage', 'customAudio', 'customEffectsLibrary', 'adFilterRules'].forEach(key => {
-        if (allSettings[key] !== undefined) {
-            localData[key] = allSettings[key];
-        }
-    });
-    
-    if (Object.keys(localData).length > 0) {
-        chrome.storage.local.set(localData, function() {
-            console.log('自定义数据已保存到local存储');
-        });
-    }
-    
-    // 通知background更新配置
+    // 统一由 background 决定存储区域并返回保存结果
     return updateConfig(allSettings, '所有设置已保存');
 }

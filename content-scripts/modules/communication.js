@@ -1,11 +1,63 @@
 // 通信管理模块
 import { globalConfig, updateConfig } from './config.js';
-import { runAdBlocker, setupMutationObserver, handleDocumentClick, findAndProcessAds } from './adBlocker.js';
-import { setupGlobalObjectionMode } from './objection.js';
-import { interceptNetwork } from './networkInterceptor.js';
+import {
+    runAdBlocker,
+    setupMutationObserver,
+    stopMutationObserver,
+    setupAdBlockerClickMode,
+    teardownAdBlockerClickMode,
+    findAndProcessAds,
+    handleDocumentClick
+} from './adBlocker.js';
+import { setupGlobalObjectionMode, teardownGlobalObjectionMode } from './objection.js';
+import { interceptNetwork, stopNetworkInterception, clearNetworkDecisionCache } from './networkInterceptor.js';
+
+function syncFeatureState(shouldRescan = false) {
+    if (globalConfig.isEnabled) {
+        setupGlobalObjectionMode();
+    } else {
+        teardownGlobalObjectionMode();
+    }
+
+    if (!globalConfig.adBlockerEnabled) {
+        teardownAdBlockerClickMode();
+        stopMutationObserver();
+        stopNetworkInterception();
+        return;
+    }
+
+    if (globalConfig.adTriggerMode === 'click') {
+        setupAdBlockerClickMode();
+        if (shouldRescan) {
+            findAndProcessAds();
+        }
+        setupMutationObserver();
+    } else {
+        teardownAdBlockerClickMode();
+        if (shouldRescan) {
+            runAdBlocker();
+        } else {
+            setupMutationObserver();
+        }
+    }
+
+    if (globalConfig.customRulesEnabled) {
+        if (shouldRescan) {
+            clearNetworkDecisionCache();
+        }
+        interceptNetwork();
+    } else {
+        stopNetworkInterception();
+    }
+}
 
 // 初始化通信
 export function initializeCommunication() {
+    if (window._objectionCommunicationInitialized) {
+        return;
+    }
+    window._objectionCommunicationInitialized = true;
+
     // 接收来自 background 的消息
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // 处理配置更新
@@ -16,21 +68,22 @@ export function initializeCommunication() {
                 hasCustomImage: !!message.config.customImage
             });
             
-            // 更新全局配置
+            const changedKeys = Array.isArray(message.changedKeys)
+                ? message.changedKeys
+                : Object.keys(message.config);
+            const shouldRescan = [
+                'adBlockerEnabled',
+                'adTriggerMode',
+                'adRemovalMode',
+                'customRulesEnabled',
+                'customAdSelectors',
+                'adFilterRules'
+            ].some(key => changedKeys.includes(key));
+
+            // 更新全局配置并同步所有功能生命周期
             updateConfig(message.config);
-            
-            // 如果广告拦截器已开启且触发方式为自动，则执行广告拦截
-            if (globalConfig.adBlockerEnabled && globalConfig.adTriggerMode === 'auto' && globalConfig.customRulesEnabled) {
-                runAdBlocker();
-            }
-            
-            // 如果点击触发模式已启用，查找并处理广告元素（覆盖层会自动添加）
-            if (globalConfig.adBlockerEnabled && globalConfig.adTriggerMode === 'click' && globalConfig.customRulesEnabled) {
-                findAndProcessAds();
-                // 在点击模式下也设置MutationObserver，以监听新元素
-                setupMutationObserver();
-            }
-            
+            syncFeatureState(shouldRescan);
+
             sendResponse({status: 'success'});
             return true;
         }
@@ -53,34 +106,7 @@ export function initializeCommunication() {
                 hasCustomAdSelectors: globalConfig.customAdSelectors?.length || 0
             });
             
-            // 如果广告拦截器已开启且触发方式为自动，则执行广告拦截
-            if (globalConfig.adBlockerEnabled && globalConfig.adTriggerMode === 'auto' && globalConfig.customRulesEnabled) {
-                runAdBlocker();
-            }
-            
-            // 如果需要拦截 URL，添加 XHR 拦截
-            if (globalConfig.adBlockerEnabled && globalConfig.customRulesEnabled) {
-                interceptNetwork();
-            }
-            
-            // 如果已启用点击触发，添加点击事件监听器（在捕获阶段）
-            if (globalConfig.adBlockerEnabled && globalConfig.adTriggerMode === 'click' && globalConfig.customRulesEnabled) {
-                // 设置点击事件监听
-                document.addEventListener('click', handleDocumentClick, true);
-                
-                // 使用统一的处理逻辑查找广告元素并添加覆盖层
-                findAndProcessAds();
-                
-                // 在点击模式下也设置MutationObserver，以监听新元素
-                setupMutationObserver();
-                
-                console.log('已设置广告拦截点击监听和广告覆盖层，并启动DOM变化监听');
-            }
-            
-            // 如果启用了全局异议模式，添加鼠标事件
-            if (globalConfig.isEnabled) {
-                setupGlobalObjectionMode();
-            }
+            syncFeatureState(true);
         } else {
             console.error('未能获取配置。');
         }

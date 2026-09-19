@@ -6,6 +6,7 @@
 export let centralConfig = {
   bubbleType: '0',       // 气泡类型：0-异议，1-等等，2-看招，3-随机，custom-自定义
   bubbleSize: '10',      // 气泡大小
+  effectVolume: 70,      // 异议特效音量：0-100
   isEnabled: false,      // 扩展开关状态
   adBlockerEnabled: false, // 广告拦截功能开关状态
   adRemovalMode: 'placeholder', // 广告处理方式: placeholder-占位符, remove-直接删除, image-图片替换
@@ -13,7 +14,8 @@ export let centralConfig = {
   customRulesEnabled: true, // 是否启用自定义过滤规则
   customImage: null,      // 自定义图像的 Base64 数据
   customAudio: null,      // 自定义音频的 Base64 数据
-  customEffectsLibrary: [] // 自定义特效库
+  customEffectsLibrary: [], // 自定义特效库
+  adFilterRules: []       // 广告过滤规则
 };
 
 /**
@@ -26,6 +28,8 @@ export function initializeCentralConfig() {
       chrome.storage.sync.get({
         bubbleType: '0',
         bubbleSize: '10',
+        effectVolume: null,
+        effectSoundEnabled: null,
         isEnabled: false,
         adBlockerEnabled: false,
         adRemovalMode: 'placeholder',
@@ -42,6 +46,19 @@ export function initializeCentralConfig() {
       }, resolve);
     })
   ]).then(([syncData, localData]) => {
+    const needsVolumeMigration = syncData.effectVolume === null || syncData.effectVolume === undefined;
+    const migratedVolume = needsVolumeMigration
+      ? (syncData.effectSoundEnabled === false ? 0 : 70)
+      : Number(syncData.effectVolume);
+    syncData.effectVolume = Number.isFinite(migratedVolume)
+      ? Math.min(Math.max(migratedVolume, 0), 100)
+      : 70;
+    delete syncData.effectSoundEnabled;
+
+    if (needsVolumeMigration) {
+      chrome.storage.sync.set({ effectVolume: syncData.effectVolume });
+    }
+
     // 合并数据到中央配置
     centralConfig = {...centralConfig, ...syncData, ...localData};
     
@@ -77,7 +94,7 @@ export function updateCentralConfig(newConfig, callback, broadcastCallback) {
   const localData = {};
   
   // 决定哪些配置保存到同步存储
-  ['bubbleType', 'bubbleSize', 'isEnabled', 'adBlockerEnabled', 
+  ['bubbleType', 'bubbleSize', 'effectVolume', 'isEnabled', 'adBlockerEnabled',
    'adRemovalMode', 'adTriggerMode', 'customRulesEnabled'].forEach(key => {
     if (newConfig[key] !== undefined) {
       syncData[key] = newConfig[key];
@@ -123,9 +140,11 @@ export function updateCentralConfig(newConfig, callback, broadcastCallback) {
       newConfig.isEnabled !== undefined ||
       newConfig.bubbleType !== undefined ||
       newConfig.bubbleSize !== undefined ||
+      newConfig.effectVolume !== undefined ||
       newConfig.adBlockerEnabled !== undefined ||
       newConfig.adRemovalMode !== undefined ||
       newConfig.adTriggerMode !== undefined ||
+      newConfig.customRulesEnabled !== undefined ||
       newConfig.customImage !== undefined ||
       newConfig.customAudio !== undefined ||
       newConfig.adFilterRules !== undefined;
@@ -168,7 +187,7 @@ export function setupStorageChangeListener(onConfigChanged, onRulesChanged) {
     
     // 处理 sync 存储变化
     if (area === 'sync') {
-      ['bubbleType', 'bubbleSize', 'isEnabled', 'adBlockerEnabled', 
+      ['bubbleType', 'bubbleSize', 'effectVolume', 'isEnabled', 'adBlockerEnabled',
        'adRemovalMode', 'adTriggerMode', 'customRulesEnabled'].forEach(key => {
         if (changes[key]) {
           configUpdates[key] = changes[key].newValue;
@@ -188,8 +207,14 @@ export function setupStorageChangeListener(onConfigChanged, onRulesChanged) {
       });
       
       // 检查自定义规则是否更新
-      if (changes.adFilterRules && onRulesChanged) {
-        onRulesChanged(changes.adFilterRules.newValue || []);
+      if (changes.adFilterRules) {
+        const newRules = changes.adFilterRules.newValue || [];
+        centralConfig.adFilterRules = newRules;
+        configUpdates.adFilterRules = newRules;
+        configChanged = true;
+        if (onRulesChanged) {
+          onRulesChanged(newRules);
+        }
       }
     }
     

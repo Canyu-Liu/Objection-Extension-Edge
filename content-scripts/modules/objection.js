@@ -1,33 +1,43 @@
 // 异议效果模块
 import { globalConfig } from './config.js';
 
+function getEffectVolume() {
+    const volume = Number(globalConfig.effectVolume);
+    if (!Number.isFinite(volume)) {
+        return 0.7;
+    }
+    return Math.min(Math.max(volume, 0), 100) / 100;
+}
+
 // 设置全局异议模式
 export function setupGlobalObjectionMode() {
-    // 确保全局异议模式已启用
-    if (!globalConfig.isEnabled) {
+    if (!globalConfig.isEnabled || window._objectionClickHandler) {
         return;
     }
-    
+
     console.log('正在设置全局异议模式');
-    
-    // 检查是否已经添加了事件监听器，避免重复添加
-    if (window._objectionEventAdded) {
-        return;
-    }
-    window._objectionEventAdded = true;
-    
-    // 监听鼠标点击事件
-    document.addEventListener('click', function (event) {
-        // 如果全局异议模式已被禁用，不执行操作
+
+    window._objectionClickHandler = function(event) {
         if (!globalConfig.isEnabled) {
             return;
         }
-        
-        // 创建并显示特效
+
         showObjectionEffect(event.clientX, event.clientY);
-    });
-    
+    };
+
+    document.addEventListener('click', window._objectionClickHandler);
     console.log('已添加全局异议模式点击事件监听器');
+}
+
+// 移除全局异议模式
+export function teardownGlobalObjectionMode() {
+    if (!window._objectionClickHandler) {
+        return;
+    }
+
+    document.removeEventListener('click', window._objectionClickHandler);
+    delete window._objectionClickHandler;
+    console.log('已移除全局异议模式点击事件监听器');
 }
 
 // 显示异议特效
@@ -88,7 +98,7 @@ export function showObjectionEffect(x, y) {
     document.body.appendChild(img);
     
     // 播放音频
-    if (audioUrl) {
+    if (audioUrl && getEffectVolume() > 0) {
         try {
             let audio;
             
@@ -102,15 +112,19 @@ export function showObjectionEffect(x, y) {
                 }).then(blob => {
                     // 创建Blob URL
                     const blobUrl = URL.createObjectURL(blob);
+                    if (getEffectVolume() === 0) {
+                        URL.revokeObjectURL(blobUrl);
+                        return;
+                    }
                     audio = new Audio(blobUrl);
-                    audio.volume = 0.7;
+                    audio.volume = getEffectVolume();
                     audio.onended = () => URL.revokeObjectURL(blobUrl); // 释放Blob URL
                     audio.play().catch(err => console.error('播放音频失败:', err));
                 }).catch(err => console.error('处理自定义音频失败:', err));
             } else {
                 // 处理标准音频文件URL
                 audio = new Audio(audioUrl);
-                audio.volume = 0.7;
+                audio.volume = getEffectVolume();
                 audio.play().catch(err => console.error('播放音频失败:', err));
             }
         } catch (err) {
@@ -151,6 +165,11 @@ export function addShakeAnimation() {
         .shake {
             animation: shake 0.5s;
             animation-iteration-count: 1;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .shake {
+                animation: none;
+            }
         }
     `;
     

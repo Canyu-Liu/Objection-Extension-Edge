@@ -60,7 +60,8 @@ export function broadcastConfigToAllTabs(configUpdates = null) {
                 // 发送配置
                 sendMessageToTab(tabId, {
                     type: 'updateConfig',
-                    config: tabConfig
+                    config: tabConfig,
+                    changedKeys: configUpdates ? Object.keys(configUpdates) : null
                 });
             } catch (error) {
                 console.error(`向标签页 ${tabId} 发送配置时出错:`, error);
@@ -82,7 +83,7 @@ export function injectScript(tabId) {
 
     return new Promise((resolve) => {
         chrome.tabs.get(tabId, function(tab) {
-            if (chrome.runtime.lastError || !tab.url.startsWith('http')) {
+            if (chrome.runtime.lastError || !tab || typeof tab.url !== 'string' || !/^https?:\/\//i.test(tab.url)) {
                 console.log(`标签页 ${tabId} 的 URL 不支持，跳过注入。`);
                 resolve({ success: false, reason: 'unsupported_url' });
                 return;
@@ -133,7 +134,8 @@ export function injectScript(tabId) {
                     // 发送配置
                     sendMessageToTab(tabId, {
                       type: 'updateConfig',
-                      config: tabConfig
+                      config: tabConfig,
+                      changedKeys: null
                     }).then(() => {
                       resolve({ success: true, injected: true });
                     });

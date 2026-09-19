@@ -1,6 +1,12 @@
 // 异议扩展内容脚本
 // 使用立即执行函数表达式(IIFE)创建私有作用域，避免变量重复声明
 (function() {
+    // 防止声明式注入和主动注入同时执行，重复注册事件监听器
+    if (window.__objectionExtensionInitialized) {
+        return;
+    }
+    window.__objectionExtensionInitialized = true;
+
     // 使用chrome.runtime.getURL获取模块的完整URL
     const communicationModuleURL = chrome.runtime.getURL('content-scripts/modules/communication.js');
 
@@ -12,6 +18,7 @@
             initializeCommunication();
         })
         .catch(error => {
+            window.__objectionExtensionInitialized = false;
             console.error('模块加载失败:', error);
         });
 })();

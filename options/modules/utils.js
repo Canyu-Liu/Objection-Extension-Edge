@@ -9,10 +9,14 @@ export function showMessage(message, type = 'info') {
     const alertDiv = document.createElement('div');
     alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
     alertDiv.setAttribute('role', 'alert');
-    alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="关闭"></button>
-    `;
+    alertDiv.appendChild(document.createTextNode(message));
+
+    const closeButton = document.createElement('button');
+    closeButton.type = 'button';
+    closeButton.className = 'btn-close';
+    closeButton.setAttribute('data-bs-dismiss', 'alert');
+    closeButton.setAttribute('aria-label', '关闭');
+    alertDiv.appendChild(closeButton);
     
     // 添加自定义样式，使消息悬浮在窗口上
     alertDiv.style.position = 'fixed';
@@ -21,16 +25,19 @@ export function showMessage(message, type = 'info') {
     alertDiv.style.transform = 'translateX(-50%)';
     alertDiv.style.zIndex = '9999';
     alertDiv.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
-    alertDiv.style.minWidth = '300px';
+    alertDiv.style.minWidth = 'min(300px, calc(100vw - 2rem))';
+    alertDiv.style.maxWidth = 'calc(100vw - 2rem)';
     
     // 将消息添加到body而不是container
     document.body.appendChild(alertDiv);
     
-    // 3秒后自动消失
-    setTimeout(() => {
-        alertDiv.classList.remove('show');
-        setTimeout(() => alertDiv.remove(), 150);
-    }, 3000);
+    // 错误消息保留到用户关闭，其他提示自动消失
+    if (type !== 'danger') {
+        setTimeout(() => {
+            alertDiv.classList.remove('show');
+            setTimeout(() => alertDiv.remove(), 150);
+        }, 3000);
+    }
 }
 
 /**
@@ -118,21 +125,13 @@ export function addShakeAnimation() {
                         animation: shake 0.5s;
                         animation-iteration-count: 1;
                     }
+                    @media (prefers-reduced-motion: reduce) {
+                        .shake {
+                            animation: none;
+                        }
+                    }
                 `
             })
         );
-    }
-}
-
-/**
- * 添加Bootstrap图标
- */
-export function addBootstrapIcons() {
-    if (!document.getElementById('bootstrap-icons')) {
-        const iconLink = document.createElement('link');
-        iconLink.id = 'bootstrap-icons';
-        iconLink.rel = 'stylesheet';
-        iconLink.href = 'https://fastly.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css';
-        document.head.appendChild(iconLink);
     }
 }

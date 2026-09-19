@@ -7,6 +7,14 @@ import { showMessage, fileToBase64, compressImage, addShakeAnimation } from './u
 let currentCustomImage = null;
 let currentCustomAudio = null;
 
+function getEffectVolume() {
+    const volume = Number(globalConfig.effectVolume);
+    if (!Number.isFinite(volume)) {
+        return 0.7;
+    }
+    return Math.min(Math.max(volume, 0), 100) / 100;
+}
+
 /**
  * 初始化自定义特效数据
  */
@@ -59,13 +67,17 @@ export function renderCustomEffectsLibrary() {
         actions.className = 'custom-item-actions';
         
         const useBtn = document.createElement('button');
+        useBtn.type = 'button';
         useBtn.className = 'btn btn-sm btn-primary me-2';
         useBtn.textContent = '使用';
+        useBtn.setAttribute('aria-label', `使用${title.textContent}`);
         useBtn.onclick = () => useCustomEffect(index);
         
         const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
         deleteBtn.className = 'btn btn-sm btn-danger';
         deleteBtn.textContent = '删除';
+        deleteBtn.setAttribute('aria-label', `删除${title.textContent}`);
         deleteBtn.onclick = () => deleteCustomEffect(index);
         
         content.appendChild(title);
@@ -93,6 +105,8 @@ export function useCustomEffect(index) {
     if (effect) {
         currentCustomImage = effect.image;
         currentCustomAudio = effect.audio;
+        globalConfig.customImage = effect.image;
+        globalConfig.customAudio = effect.audio;
         
         if (elements.previewImage) {
             elements.previewImage.src = effect.image;
@@ -151,14 +165,16 @@ export function testCustomEffect() {
     addShakeAnimation();
     
     // 播放音频
-    if (currentCustomAudio) {
+    if (getEffectVolume() > 0 && currentCustomAudio) {
         const audio = new Audio(currentCustomAudio);
+        audio.volume = getEffectVolume();
         audio.play().catch(err => {
             console.error('播放音频失败:', err);
             showMessage('音频播放失败', 'danger');
         });
-    } else {
+    } else if (getEffectVolume() > 0) {
         const audio = new Audio(chrome.runtime.getURL("./audio/phoenix_wright_objection_jp.wav"));
+        audio.volume = getEffectVolume();
         audio.play().catch(err => console.error(err));
     }
     
@@ -190,6 +206,8 @@ export function resetCustomSettings() {
     if (confirm('确定要重置自定义设置吗？这将恢复默认图像和音频。')) {
         currentCustomImage = null;
         currentCustomAudio = null;
+        globalConfig.customImage = null;
+        globalConfig.customAudio = null;
         
         if (elements.previewImage) {
             elements.previewImage.src = chrome.runtime.getURL("./images/jp_objection.png");
@@ -276,6 +294,7 @@ export function initializeCustomEffectsEvents() {
                 }
                 
                 currentCustomImage = compressedImage;
+                globalConfig.customImage = compressedImage;
                 
                 // 自动切换到自定义模式
                 if (elements.bubbleSelect) {
@@ -304,6 +323,7 @@ export function initializeCustomEffectsEvents() {
                 
                 const base64Data = await fileToBase64(file);
                 currentCustomAudio = base64Data;
+                globalConfig.customAudio = base64Data;
                 
                 // 自动切换到自定义模式
                 if (elements.bubbleSelect) {

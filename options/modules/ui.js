@@ -8,6 +8,8 @@ import { showMessage } from './utils.js';
 export const elements = {
     bubbleSelect: null,
     sizeInput: null,
+    effectVolumeInput: null,
+    effectVolumeValue: null,
     toggleSwitch: null,
     adBlockerSwitch: null,
     adModeGroup: null,
@@ -42,6 +44,8 @@ export function initializeUI() {
     // 获取所有UI元素的引用
     elements.bubbleSelect = document.getElementById('bubble-style');
     elements.sizeInput = document.getElementById('bubble-size');
+    elements.effectVolumeInput = document.getElementById('effect-volume-input');
+    elements.effectVolumeValue = document.getElementById('effect-volume-value');
     elements.toggleSwitch = document.getElementById('objection-switch');
     elements.adBlockerSwitch = document.getElementById('ad-blocker-switch');
     elements.adModeGroup = document.getElementById('ad-mode-group');
@@ -81,6 +85,8 @@ export function updateUIFromConfig(config) {
     // 设置界面元素状态
     if (elements.bubbleSelect) elements.bubbleSelect.value = config.bubbleType;
     if (elements.sizeInput) elements.sizeInput.value = config.bubbleSize;
+    if (elements.effectVolumeInput) elements.effectVolumeInput.value = config.effectVolume ?? 70;
+    if (elements.effectVolumeValue) elements.effectVolumeValue.textContent = `${config.effectVolume ?? 70}%`;
     if (elements.toggleSwitch) elements.toggleSwitch.checked = config.isEnabled;
     if (elements.adBlockerSwitch) elements.adBlockerSwitch.checked = config.adBlockerEnabled;
     if (elements.customRulesSwitch) elements.customRulesSwitch.checked = config.customRulesEnabled;
@@ -107,8 +113,8 @@ export function updateUIFromConfig(config) {
     }
     
     // 加载自定义图像
-    if (config.customImage && elements.previewImage) {
-        elements.previewImage.src = config.customImage;
+    if (elements.previewImage) {
+        elements.previewImage.src = config.customImage || chrome.runtime.getURL('images/jp_objection.png');
     }
 }
 
@@ -134,6 +140,7 @@ export function getCurrentUISettings() {
     return {
         bubbleType: elements.bubbleSelect ? elements.bubbleSelect.value : globalConfig.bubbleType,
         bubbleSize: elements.sizeInput ? elements.sizeInput.value : globalConfig.bubbleSize,
+        effectVolume: elements.effectVolumeInput ? Number(elements.effectVolumeInput.value) : globalConfig.effectVolume,
         isEnabled: elements.toggleSwitch ? elements.toggleSwitch.checked : globalConfig.isEnabled,
         adBlockerEnabled: elements.adBlockerSwitch ? elements.adBlockerSwitch.checked : globalConfig.adBlockerEnabled,
         adRemovalMode: currentAdMode,
@@ -147,42 +154,53 @@ export function getCurrentUISettings() {
 }
 
 /**
+ * 处理异议特效音量变化
+ * @param {number} volume - 音量百分比
+ */
+export function handleEffectVolumeChange(volume) {
+    const normalizedVolume = Math.min(Math.max(Number(volume) || 0, 0), 100);
+    if (elements.effectVolumeValue) {
+        elements.effectVolumeValue.textContent = `${normalizedVolume}%`;
+    }
+    updateConfig({ effectVolume: normalizedVolume }, '音量设置已保存');
+}
+
+/**
  * 处理异议效果开关变化
  * @param {boolean} isEnabled - 是否启用
  */
 export function handleObjectionToggle(isEnabled) {
+    const config = { isEnabled };
+
     if (isEnabled && elements.adBlockerSwitch && elements.adBlockerSwitch.checked) {
         // 如果启用异议效果时，广告拦截也是开启状态，显示提示并禁用广告拦截
         elements.adBlockerSwitch.checked = false;
-        handleAdBlockerChange(false);
+        handleAdBlockerChange(false, false);
+        config.adBlockerEnabled = false;
         showMessage('已禁用广告拦截，两种功能不能同时启用', 'info');
-        
-        // 同时更新配置以保存状态
-        updateConfig({ 
-            isEnabled: true,
-            adBlockerEnabled: false 
-        });
     }
+
+    updateConfig(config, '设置已保存');
 }
 
 /**
  * 处理广告拦截开关变化
  * @param {boolean} isEnabled - 是否启用
  */
-export function handleAdBlockerChange(isEnabled) {
+export function handleAdBlockerChange(isEnabled, persist = true) {
     if (elements.adModeGroup) {
         elements.adModeGroup.style.display = isEnabled ? 'block' : 'none';
     }
-    
+
+    const config = { adBlockerEnabled: isEnabled };
     if (isEnabled && elements.toggleSwitch && elements.toggleSwitch.checked) {
         // 如果启用广告拦截时，异议效果也是开启状态，显示提示并禁用异议效果
         elements.toggleSwitch.checked = false;
+        config.isEnabled = false;
         showMessage('已禁用异议效果，两种功能不能同时启用', 'info');
-        
-        // 同时更新配置以保存状态
-        updateConfig({ 
-            isEnabled: false,
-            adBlockerEnabled: true 
-        });
+    }
+
+    if (persist) {
+        updateConfig(config, '设置已保存');
     }
 }
